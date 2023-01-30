@@ -1,2 +1,3 @@
 cachedir
 data
+*.pyc
