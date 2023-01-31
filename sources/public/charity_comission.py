@@ -7,6 +7,7 @@ import json
 
 from models import DataAsset, DataDate, DataSource, DateMeta, Organisations, SourceType
 from utils import DATA_DIR, CACHE
+from sources.public.census import POP_LA
 
 CC_ENDPOINT = 'https://ccewuksprdoneregsadata1.blob.core.windows.net/data/json/publicextract.charity.zip'
 CC_AREA_EP = 'https://ccewuksprdoneregsadata1.blob.core.windows.net/data/json/publicextract.charity_area_of_operation.zip'
@@ -56,7 +57,16 @@ def charities_by_la(data):
         'geographic_area_description': 'la_name',
         'registered_charity_number': 'count',
     })
-    df = df.groupby('la_name').count().sort_values('count', ascending=False)
+    df = df.groupby('la_name').count().sort_values('count', ascending=False).reset_index()
+
+    ons_codes = POP_LA.get_data()[["la_code", "la_name"]]
+    print(len(df))
+    df = pd.merge(df, ons_codes, how="outer")
+    print(len(df), len(ons_codes))
+    no_match = df["la_code"].isnull()
+    print(df[no_match])
+    #df.loc[no_match, "la_code"] = df.loc[no_match, "la_name"].map(TURN2US_LA_MATCH)
+
     return df
 
 N_CHARITIES_LA = DataAsset(

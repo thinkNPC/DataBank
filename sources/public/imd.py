@@ -3,7 +3,7 @@ import os
 import pandas as pd
 
 import utils
-from models import DataAsset, DataSource, DateMeta, Organisations, SourceType
+from models import DataDate, DataAsset, DataSource, DateMeta, Organisations, SourceType
 
 IMD_PUBLISH_URL = (
     "https://www.gov.uk/government/statistics/english-indices-of-deprivation-2019"
@@ -20,12 +20,13 @@ def read_imd_la():
     df = pd.read_excel(IMD_LA_URL, sheet_name="IMD")
     df = df.rename(columns=IMD_COL_MAP)
 
-    return df, DateMeta(
+    dateMeta = DateMeta(
         publish_date=pd.to_datetime("2019-01-01"),
         update_freq=pd.Timedelta(
             365 * 5, unit="days"
         ),  # website says update due in 2023
     )
+    return DataDate(df, dateMeta)
 
 
 IMD_LA = DataSource(

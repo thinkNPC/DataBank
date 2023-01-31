@@ -2,7 +2,7 @@ import os
 
 import pandas as pd
 
-from models import DataAsset, DataSource, DateMeta, Organisations, SourceType
+from models import DataDate, DataAsset, DataSource, DateMeta, Organisations, SourceType
 from sources.public.census import POP_LA
 from utils import CACHE, DATA_DIR
 
@@ -56,7 +56,7 @@ def read_turn2us():
         publish_date=TURN2US_DATA["publish_date"],
         latest_date=df["Application Date"].max(),
     )
-    return df, date_meta
+    return DataDate(df, date_meta)
 
 
 def agg_turn2us_by_la(data):

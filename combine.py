@@ -6,6 +6,7 @@ import pandas as pd
 from models import DataAsset, DataSource, DateMeta, Organisations, SourceType
 from sources.partner import turn2us
 from sources.public import census, imd
+from sources.public import charity_comission
 
 SCORE_DEBUG = False
 
@@ -44,8 +45,8 @@ def combine_la(data1, data2):
     (key1, df1) = data1
     (key2, df2) = data2
     col = "la_code"
-    assert "la_code" in df1.columns
-    assert "la_code" in df2.columns
+    assert "la_code" in df1.columns, key1
+    assert "la_code" in df2.columns, key2
 
     df = pd.merge(df1, df2, how="left")
     score_merge(data1, data2, df)
@@ -63,6 +64,7 @@ DATA_BANK_INPUTS = (
     census.ETHNICITY_LA,
     imd.IMD_LA,
     turn2us.Turn2usProportional,
+    charity_comission.N_CHARITIES_LA,
 )
 
 DataBank = DataAsset(

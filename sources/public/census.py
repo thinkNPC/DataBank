@@ -4,7 +4,7 @@ import os
 import pandas as pd
 import requests
 
-from models import DataAsset, DataSource, DateMeta, Organisations, SourceType
+from models import DataDate, DataAsset, DataSource, DateMeta, Organisations, SourceType
 from utils import DATA_DIR
 
 ONS_API_ENDPOINT = "https://api.beta.ons.gov.uk/v1/datasets/{id}"
@@ -41,13 +41,13 @@ def get_census_ethnicity():
         columns="Ethnic group (20 categories)",
         values="Observation",
     ).reset_index()
-    return df, DateMeta(publish_date=publish_date)
+    return DataDate(df, DateMeta(publish_date=publish_date))
 
 
 def get_census_age_sex():
     df, publish_date = get_ons_latest_df_and_date(AGE_SEX_LA_ID)
     df = df.rename(columns=CENSUS_LA_COL_MAP)
-    return df, DateMeta(publish_date=publish_date)
+    return DataDate(df, DateMeta(publish_date=publish_date))
 
 
 def group_populations(data):
