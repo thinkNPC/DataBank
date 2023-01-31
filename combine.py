@@ -51,7 +51,6 @@ def combine_la(data1, data2):
 def combine_databank_datasets(data):
     assert list(data.keys())[0] == 'LA populations'
     (_, df) = reduce(combine_la, data.items())
-    print(df.columns)
     return df
     
 
