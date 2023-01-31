@@ -1,4 +1,5 @@
 from functools import reduce
+import logging
 
 from partner import turn2us
 from public import imd, census
@@ -17,22 +18,25 @@ def score_merge(data1, data2, dfm, col='la_code'):
     unique_col = list(unique_cols)[0]
     achieved = sum(dfm[unique_col].notnull())
     score = 100 * achieved / N
-    print(f'Merging: {key2}: {achieved} / {N} ({score:.0f}%)')
+    if achieved != N:
+        logging.warning(f'Merging: {key2}: {achieved} / {N} ({score:.0f}%)')
+    else:
+        logging.info(f'Merging: {key2}: {achieved} / {N} ({score:.0f}%)')
 
     if SCORE_DEBUG:
         set1 = set(df1[col])
         set2 = set(df2[col])
         setm = set(dfm[col])
         if (set1 == set2) and (set2 == setm):
-            print(f'Merge success: ({key1})({key2})')
+            logging.info(f'Merge success: ({key1})({key2})')
         else:
-            print(f'Merge fail: ({key1})({key2})')
+            logging.warning(f'Merge fail: ({key1})({key2})')
             set1_extra = set1 - set2
             set2_extra = set2 - set1
-            print(f'in left but not right: {len(set1_extra)}, {set1_extra}')
-            print(f'in right but not left: {len(set2_extra)}, {set2_extra}')
-            print(len(df1[col]), len(df2[col]), len(dfm[col]))
-        print()
+            logging.warning(f'in left but not right: {len(set1_extra)}, {set1_extra}')
+            logging.warning(f'in right but not left: {len(set2_extra)}, {set2_extra}')
+            logging.warning(len(df1[col]), len(df2[col]), len(dfm[col]))
+        logging.info()
 
 
 

@@ -1,10 +1,12 @@
 import os
 import typing
+import slugify
 import json
 import logging
 import pandas as pd
 from dataclasses import dataclass
 from enum import Enum
+from utils import OUTPUT_DIR
 
 
 class Organisations(Enum):
@@ -140,3 +142,16 @@ class DataAsset:
 
     def __repr__(self):
         return f"DataAsset({self.name}, sources: {[source.name for source in self.sources]})"
+
+
+class Output:
+    def __init__(self, asset):
+        self.asset = asset
+    
+    def csv(self):
+        df = self.asset.get_data()
+        fname = slugify.slugify(self.asset.name)
+        path = os.path.join(OUTPUT_DIR, f'{fname}.csv')
+        os.makedirs(OUTPUT_DIR, exist_ok=True)
+        df.to_csv(path)
+        print(f'{self.asset.name} written to {path}')

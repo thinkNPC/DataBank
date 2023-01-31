@@ -3,6 +3,7 @@ from diskcache import Cache
 CACHE = Cache("cachedir")
 
 DATA_DIR = 'data'
+OUTPUT_DIR = 'output'
 
 
 def drop_buckinghamshire_2020(df):
