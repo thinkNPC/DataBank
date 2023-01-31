@@ -4,8 +4,8 @@ from functools import reduce
 import pandas as pd
 
 from models import DataAsset, DataSource, DateMeta, Organisations, SourceType
-from partner import turn2us
-from public import census, imd
+from sources.partner import turn2us
+from sources.public import census, imd
 
 SCORE_DEBUG = False
 

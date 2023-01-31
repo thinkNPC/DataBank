@@ -3,8 +3,8 @@ import logging
 from assets import DATA_BANK_INPUTS
 from combine import DataBank
 from models import Output
-from partner.turn2us import Turn2usProportional
-from public.imd import IMD_LA
+from sources.partner.turn2us import Turn2usProportional
+from sources.public.imd import IMD_LA
 
 logging.basicConfig(level=logging.INFO)
 

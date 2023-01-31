@@ -1,5 +1,5 @@
-from partner import turn2us
-from public import census, imd
+from sources.partner import turn2us
+from sources.public import census, imd
 
 DATA_BANK_INPUTS = (
     turn2us.Turn2usProportional,
