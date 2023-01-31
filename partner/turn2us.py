@@ -1,9 +1,10 @@
 import os
-import pandas as pd
-from models import DataAsset, DataSource, DateMeta, SourceType, Organisations
-from utils import DATA_DIR, CACHE
 
+import pandas as pd
+
+from models import DataAsset, DataSource, DateMeta, Organisations, SourceType
 from public.census import POP_LA
+from utils import CACHE, DATA_DIR
 
 TURN2US_DATA = {
     "fname": "08.07.2020 - Turn 2 Us Data.xlsx",

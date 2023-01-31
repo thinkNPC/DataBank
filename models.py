@@ -1,11 +1,13 @@
-import os
-import typing
-import slugify
 import json
 import logging
-import pandas as pd
+import os
+import typing
 from dataclasses import dataclass
 from enum import Enum
+
+import pandas as pd
+import slugify
+
 from utils import OUTPUT_DIR
 
 
