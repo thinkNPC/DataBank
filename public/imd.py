@@ -3,21 +3,26 @@ import pandas as pd
 from models import DataAsset, DataSource, DateMeta, SourceType, Organisations
 import utils
 
-IMD_PUBLISH_URL = "https://www.gov.uk/government/statistics/english-indices-of-deprivation-2019"
-IMD_LA_URL = 'https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/833995/File_10_-_IoD2019_Local_Authority_District_Summaries__lower-tier__.xlsx'
+IMD_PUBLISH_URL = (
+    "https://www.gov.uk/government/statistics/english-indices-of-deprivation-2019"
+)
+IMD_LA_URL = "https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/833995/File_10_-_IoD2019_Local_Authority_District_Summaries__lower-tier__.xlsx"
 
 IMD_COL_MAP = {
-    'Local Authority District code (2019)': 'la_code',
-    'Local Authority District name (2019)': 'la_name',
+    "Local Authority District code (2019)": "la_code",
+    "Local Authority District name (2019)": "la_name",
 }
 
+
 def read_imd_la():
-    df = pd.read_excel(IMD_LA_URL, sheet_name='IMD')
+    df = pd.read_excel(IMD_LA_URL, sheet_name="IMD")
     df = df.rename(columns=IMD_COL_MAP)
 
     return df, DateMeta(
-        publish_date=pd.to_datetime('2019-01-01'),
-        update_freq=pd.Timedelta(365*5, unit='days'), # website says update due in 2023
+        publish_date=pd.to_datetime("2019-01-01"),
+        update_freq=pd.Timedelta(
+            365 * 5, unit="days"
+        ),  # website says update due in 2023
     )
 
 
@@ -28,5 +33,5 @@ IMD_LA = DataSource(
     sub_org="English indices of deprivation 2019",
     source_type=SourceType.webscrape,
     url=IMD_PUBLISH_URL,
-    instructions='MHCLG website indicates indices are due to be updated in 2023',
+    instructions="MHCLG website indicates indices are due to be updated in 2023",
 )

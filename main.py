@@ -8,10 +8,11 @@ from models import Output
 
 logging.basicConfig(level=logging.INFO)
 
+
 def run_databank():
     logging.info(DataBank)
     Output(DataBank).csv()
-    
+
 
 def run_one(asset):
     print(asset)
@@ -26,7 +27,6 @@ def run_all():
         logging.info(asset)
         logging.info(df.iloc[0].head())
 
+
 if __name__ == "__main__":
     run_databank()
-
-
