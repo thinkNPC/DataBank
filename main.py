@@ -4,7 +4,7 @@ from assets import DATA_BANK_INPUTS
 from combine import DataBank
 from models import Output
 from sources.partner.turn2us import Turn2usProportional
-from sources.public.imd import IMD_LA
+from sources.public.charity_comission import N_CHARITIES_LA
 
 logging.basicConfig(level=logging.INFO)
 
@@ -29,4 +29,5 @@ def run_all():
 
 
 if __name__ == "__main__":
-    run_databank()
+    run_one(N_CHARITIES_LA)
+    #run_databank()

@@ -13,6 +13,7 @@ class Organisations(Enum):
     turn2us = "Turn2us"
     mhclg = "Ministry of Housing, Communities & Local Government"
     ons = "Office for National Statistics"
+    charity_commission = "Charity Commission"
     none = None
 
 
@@ -85,6 +86,12 @@ class DateMeta:
 
 
 @dataclass
+class DataDate:
+    df: pd.DataFrame
+    dateMeta: DateMeta
+
+
+@dataclass
 class DataSource:
     name: str
     source_type: SourceType
@@ -101,11 +108,13 @@ class DataSource:
         if self.data is not None:
             return self.data
 
-        data, dateUpdate = self.data_getter()
-        self.dateMeta.update(dateUpdate)
+        dataDate = self.data_getter()
+        assert type(dataDate) is DataDate, 'DataSource.data_getter must return a DataDate object'
+        
+        self.dateMeta.update(dataDate.dateMeta)
         self.dateMeta.validate(self.name)
-        self.data = data
-        return data
+        self.data = dataDate.df
+        return self.data
 
     def __repr__(self):
         return f"DataSource({self.name})"
