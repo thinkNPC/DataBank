@@ -14,10 +14,7 @@ IMD_COL_MAP = {
 def read_imd_la():
     df = pd.read_excel(IMD_LA_URL, sheet_name='IMD')
     df = df.rename(columns=IMD_COL_MAP)
-    print(df)
-    print(df.columns)
-    df = utils.drop_buckinghamshire_2020(df)
-    df = utils.drop_northamptonshire_2021(df)
+
     return df, DateMeta(
         publish_date=pd.to_datetime('2019-01-01'),
         update_freq=pd.Timedelta(365*5, unit='days'), # website says update due in 2023
