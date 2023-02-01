@@ -1,10 +1,13 @@
 from diskcache import Cache
+import pandas as pd
 
 CACHE = Cache("cachedir")
 
 DATA_DIR = "data"
 OUTPUT_DIR = "output"
+RESOURCE_DIR = "resources"
 
+YEAR = pd.Timedelta('365 days')
 
 def drop_buckinghamshire_2020(df):
     # 4 LAs became E06000060/Buckinghamshire in 2020
