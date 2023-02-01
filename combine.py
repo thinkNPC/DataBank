@@ -64,7 +64,7 @@ DATA_BANK_INPUTS = (
     census.ETHNICITY_LA,
     imd.IMD_LA,
     turn2us.Turn2usProportional,
-    charity_comission.N_CHARITIES_LA,
+    charity_comission.N_CHARITIES_UTLA,
 )
 
 DataBank = DataAsset(

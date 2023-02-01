@@ -15,7 +15,6 @@ LTLA_UTLA_FILE = {
 def get_ltla_utla_lookup():
     path = os.path.join(utils.RESOURCE_DIR, LTLA_UTLA_FILE['fname'])
     df = pd.read_csv(path)
-    print(df.columns)
     df = df.rename(columns={
         'LTLA22CD': 'la_code',
         'LTLA22NM': 'la_name',

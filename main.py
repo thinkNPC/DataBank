@@ -6,7 +6,7 @@ from assets import DATA_BANK_INPUTS
 from combine import DataBank
 from models import Output
 from sources.partner.turn2us import Turn2usProportional
-from sources.public.charity_comission import N_CHARITIES_LA
+from sources.public.charity_comission import NCharitiesUTLAPerHead
 
 logging.basicConfig(level=logging.INFO)
 
@@ -37,5 +37,5 @@ if __name__ == "__main__":
         asset = getattr(module, sys.argv[2])
         print(asset.get_data())
     else:
-        run_one(N_CHARITIES_LA)
+        run_one(NCharitiesUTLAPerHead)
         #run_databank()

@@ -47,13 +47,14 @@ def get_census_ethnicity():
 def get_census_age_sex():
     df, publish_date = get_ons_latest_df_and_date(AGE_SEX_LA_ID)
     df = df.rename(columns=CENSUS_LA_COL_MAP)
+    df = df.rename(columns={"Observation": "population"})
     return DataDate(df, DateMeta(publish_date=publish_date))
 
 
 def group_populations(data):
     df = data["age_sex_census"]
     la_cols = list(CENSUS_LA_COL_MAP.values())
-    df = df[la_cols + ["Observation"]]
+    df = df[la_cols + ["population"]]
     df = df.groupby(la_cols).sum().reset_index()
     return df
 
