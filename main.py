@@ -1,4 +1,6 @@
 import logging
+import sys
+import importlib
 
 from assets import DATA_BANK_INPUTS
 from combine import DataBank
@@ -29,5 +31,11 @@ def run_all():
 
 
 if __name__ == "__main__":
-    run_one(N_CHARITIES_LA)
-    #run_databank()
+    if len(sys.argv) > 1:
+            
+        module = importlib.import_module(sys.argv[1])
+        asset = getattr(module, sys.argv[2])
+        print(asset.get_data())
+    else:
+        run_one(N_CHARITIES_LA)
+        #run_databank()
