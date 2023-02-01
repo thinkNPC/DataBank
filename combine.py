@@ -5,8 +5,7 @@ import pandas as pd
 
 from models import DataAsset, DataSource, DateMeta, Organisations, SourceType
 from sources.partner import turn2us
-from sources.public import census, imd
-from sources.public import charity_comission
+from sources.public import census, charity_comission, imd
 
 SCORE_DEBUG = False
 

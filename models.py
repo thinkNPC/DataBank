@@ -109,8 +109,10 @@ class DataSource:
             return self.data
 
         dataDate = self.data_getter()
-        assert type(dataDate) is DataDate, f'DataSource({self.name}).data_getter must return a DataDate object'
-        
+        assert (
+            type(dataDate) is DataDate
+        ), f"DataSource({self.name}).data_getter must return a DataDate object"
+
         self.dateMeta.update(dataDate.dateMeta)
         self.dateMeta.validate(self.name)
         self.data = dataDate.df
