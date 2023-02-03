@@ -13,6 +13,8 @@ from sources.public.census import POP_LA
 from sources.public.geoportal import LTLA_UTLA
 from utils import CACHE, DATA_DIR
 
+from plotting import hex
+
 CC_ENDPOINT = "https://ccewuksprdoneregsadata1.blob.core.windows.net/data/json/publicextract.charity.zip"
 CC_AREA_EP = "https://ccewuksprdoneregsadata1.blob.core.windows.net/data/json/publicextract.charity_area_of_operation.zip"
 
@@ -145,4 +147,21 @@ NCharitiesUTLAPerHead = DataAsset(
         "ltla_pop": POP_LA,
     },
     processer=normalise_charities_utla,
+)
+
+def charity_map(data):
+    df = data['n_charities']
+    hexes = hex.get_hexes(hex.UTLA_HEXES)
+    hexes = hexes.rename(columns={
+        'CTYUA22CD': 'utla_code',
+    })
+    fig = hex.plot_hexes(hexes, df, 'utla_code', 'per_1000')
+    fig.show()
+
+CharityDensityHex = DataAsset(
+    name='Charities per head in each local authority',
+    inputs={
+        'n_charities': NCharitiesUTLAPerHead,
+    },
+    processer=charity_map
 )
