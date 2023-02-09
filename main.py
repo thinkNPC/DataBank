@@ -36,6 +36,7 @@ if __name__ == "__main__":
         module = importlib.import_module(sys.argv[1])
         asset = getattr(module, sys.argv[2])
         print(asset.get_data())
+        Output(asset).csv()
     else:
         run_one(NCharitiesUTLAPerHead)
         # run_databank()
