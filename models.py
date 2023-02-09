@@ -14,6 +14,7 @@ class Organisations(Enum):
     mhclg = "Ministry of Housing, Communities & Local Government"
     ons = "Office for National Statistics"
     charity_commission = "Charity Commission"
+    trussell_trust = "Trussell Trust"
     none = None
 
 

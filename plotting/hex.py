@@ -8,9 +8,10 @@ import numpy as np
 from plotting.style import npc_style, NULL_GREY
 
 UTLA_HEXES = 'utla_hex.csv'
+LTLA_HEXES = 'ltla_hex.csv'
 
 def get_hexes(fname):
-    df = pd.read_csv(os.path.join(utils.RESOURCE_DIR, UTLA_HEXES))
+    df = pd.read_csv(os.path.join(utils.RESOURCE_DIR, fname))
     return df
 
 def plot_hexes(hexes, df, loc_col, plot_col):
@@ -27,7 +28,7 @@ def plot_hexes(hexes, df, loc_col, plot_col):
         go.Scatter(
             x=df_valid['grid_x'],
             y=df_valid['grid_y'],
-            text=df_valid['utla_name'],
+            text=df_valid['la_name'],
             hoverinfo='z+text',
             mode='markers',
             marker_symbol='hexagon',
@@ -43,7 +44,7 @@ def plot_hexes(hexes, df, loc_col, plot_col):
         go.Scatter(
             x=df_null['grid_x'],
             y=df_null['grid_y'],
-            text=df_null['utla_name'],
+            text=df_null['la_name'],
             hoverinfo='z+text',
             mode='markers',
             marker_symbol='hexagon',

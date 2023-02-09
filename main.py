@@ -2,11 +2,10 @@ import importlib
 import logging
 import sys
 
-from assets import DATA_BANK_INPUTS
+from assets import ASSETS_DICT
 from combine import DataBank
 from models import Output
-from sources.partner.turn2us import Turn2usProportional
-from sources.public.charity_comission import NCharitiesUTLAPerHead
+
 
 logging.basicConfig(level=logging.INFO)
 
@@ -32,11 +31,6 @@ def run_all():
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
-
-        module = importlib.import_module(sys.argv[1])
-        asset = getattr(module, sys.argv[2])
+        asset = ASSETS_DICT[sys.argv[1]]
+        print(asset.name)
         print(asset.get_data())
-        Output(asset).csv()
-    else:
-        run_one(NCharitiesUTLAPerHead)
-        # run_databank()
