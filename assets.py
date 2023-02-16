@@ -1,13 +1,14 @@
 from models import Report
 from reports import summary
 from sources.partner import trusselltrust, turn2us
-from sources.public import census, charity_comission, imd
+from sources.public import census, charity_comission, imd, levellingup
 
 SummaryReport = Report(
-    name="Example summary report",
+    name="Report",
     assets=(
         charity_comission.CharityDensityHex,
         trusselltrust.TrussellTrustHex,
+        levellingup.LEVELLING_UP_HEX,
     ),
 )
 
@@ -19,6 +20,8 @@ ASSETS = (
     census.AGE_SEX_LA,
     census.POP_LA,
     charity_comission.CharityDensityHex,
+    levellingup.LEVELLING_UP,
+    levellingup.LEVELLING_UP_HEX,
     trusselltrust.TrussellTrust,
     trusselltrust.TrussellTrustProportional,
     trusselltrust.TrussellTrustHex,

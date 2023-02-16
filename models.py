@@ -18,11 +18,12 @@ class Organisations(Enum):
     ons = "Office for National Statistics"
     charity_commission = "Charity Commission"
     trussell_trust = "Trussell Trust"
+    dluhc = "Department for Levelling Up, Housing and Communities"
     none = None
 
 
 class SourceType(Enum):
-    api = ("API",)
+    api = "API"
     webscrape = "Web scrape"
     public_download = "Public download"
     email = "Email return"
@@ -135,7 +136,9 @@ class DataSource:
         message = "up to date" if valid else "due update"
         output = f"{self.name} ({message}): "
         if self.dateMeta.latest_date:
-            output += f"latest data from: {self.dateMeta.latest_date.strftime(DATE_FMT)}; "
+            output += (
+                f"latest data from: {self.dateMeta.latest_date.strftime(DATE_FMT)}; "
+            )
         if self.dateMeta.publish_date:
             output += f"published on: {self.dateMeta.publish_date.strftime(DATE_FMT)}."
         return output
