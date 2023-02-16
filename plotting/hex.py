@@ -60,4 +60,15 @@ def plot_hexes(hexes, df, loc_col, plot_col):
         scaleratio=1,
     )
     npc_style(fig)
+    fig.update_layout(
+        showlegend=False,
+        visible=False,
+        visible=False,
+    )
+    fig.update_layout(
+        autosize=False,
+        width=500,
+        height=500,
+    )
+    
     return fig
