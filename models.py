@@ -242,7 +242,7 @@ class Output:
         fig.write_html(path)
 
     def plotly_png(self, fig, path):
-        fig.write_image(path)
+        fig.write_image(path, scale=3)
 
     def md(self, string, path):
         with open(path, "w") as f:

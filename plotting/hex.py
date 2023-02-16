@@ -62,13 +62,14 @@ def plot_hexes(hexes, df, loc_col, plot_col):
     npc_style(fig)
     fig.update_layout(
         showlegend=False,
-        visible=False,
-        visible=False,
+        xaxis=dict(visible=False),
+        yaxis=dict(visible=False),
     )
     fig.update_layout(
         autosize=False,
-        width=500,
-        height=500,
+        width=350,
+        height=350,
+        margin=dict(b=0,t=0,r=0,l=0),
     )
     
     return fig
