@@ -2,3 +2,7 @@ cachedir
 data
 output
 *.pyc
+
+*.png
+*.md
+*.html

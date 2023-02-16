@@ -15,11 +15,12 @@ TT_DATA = {
 }
 
 TT_COLS = [
-    'Number of parcels given to adults',
-    'Number of parcels given to children',
-    'Total number of parcels distributed', 
-    'Number of distribution centres',
+    "Number of parcels given to adults",
+    "Number of parcels given to children",
+    "Total number of parcels distributed",
+    "Number of distribution centres",
 ]
+
 
 @CACHE.memoize()
 def read_trusselltrust():
@@ -36,12 +37,13 @@ def read_trusselltrust():
     )
     return DataDate(df, date_meta)
 
+
 def normalise_trussell_data(data):
-    df = data['trussell']#.dropna(subset=['la_code'])
-    pop = POP_LA.get_data()[['la_code', 'population']]
+    df = data["trussell"]  # .dropna(subset=['la_code'])
+    pop = POP_LA.get_data()[["la_code", "population"]]
     df = pd.merge(df, pop)
-    df[TT_COLS] = df[TT_COLS].divide(df['population'], axis=0)
-    df = df.sort_values('Total number of parcels distributed', ascending=False)
+    df[TT_COLS] = df[TT_COLS].divide(df["population"], axis=0)
+    df = df.sort_values("Total number of parcels distributed", ascending=False)
     return df
 
 
@@ -60,25 +62,24 @@ TrussellTrustProportional = DataAsset(
     processer=normalise_trussell_data,
 )
 
+
 def trussell_hex(data):
-    df = data['trussell']
+    df = data["trussell"]
     hexes = hex.get_hexes(hex.LTLA_HEXES)
-    hexes = hexes.rename(columns={
-        'LAD22CD': 'la_code',
-    })
-    print(hexes)
-    fig = hex.plot_hexes(
-        hexes, 
-        df, 
-        'la_code', 
-        'Total number of parcels distributed'
+    hexes = hexes.rename(
+        columns={
+            "LAD22CD": "la_code",
+        }
     )
-    fig.show()
+    print(hexes)
+    fig = hex.plot_hexes(hexes, df, "la_code", "Total number of parcels distributed")
+    return fig
+
 
 TrussellTrustHex = DataAsset(
-    name='Trussell parcels delivered per head',
+    name="Trussell parcels delivered per head",
     inputs={
-        'trussell': TrussellTrustProportional,
+        "trussell": TrussellTrustProportional,
     },
-    processer=trussell_hex
+    processer=trussell_hex,
 )

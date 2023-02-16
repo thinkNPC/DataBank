@@ -1,6 +1,6 @@
+import functools
 import io
 import os
-import functools
 
 import pandas as pd
 import requests
@@ -23,6 +23,7 @@ LTLA_COUNTRY_FILE = {
     "fname": "Local_Authority_District_to_Country_(December_2022)_Lookup_in_the_United_Kingdom.csv",
     "publish_date": pd.to_datetime("2022-12-01"),
 }
+
 
 def get_ltla_region_lookup():
     path = os.path.join(utils.RESOURCE_DIR, LTLA_REGION_FILE["fname"])
@@ -52,7 +53,6 @@ def get_ltla_country_lookup():
     return DataDate(df, DateMeta(publish_date=LTLA_COUNTRY_FILE["publish_date"]))
 
 
-
 def get_ltla_utla_lookup():
     path = os.path.join(utils.RESOURCE_DIR, LTLA_UTLA_FILE["fname"])
     df = pd.read_csv(path)
@@ -66,24 +66,24 @@ def get_ltla_utla_lookup():
     )
     return DataDate(df, DateMeta(publish_date=LTLA_UTLA_FILE["publish_date"]))
 
+
 def combine_lkps(data):
     def ons_merge(df1, df2):
-        df = pd.merge(df1, df2, on='la_code', how='outer')
-        df['la_name'] = df['la_name_x'].fillna(df['la_name_y'])
-        df = df.drop(['la_name_x', 'la_name_y'], axis=1)
+        df = pd.merge(df1, df2, on="la_code", how="outer")
+        df["la_name"] = df["la_name_x"].fillna(df["la_name_y"])
+        df = df.drop(["la_name_x", "la_name_y"], axis=1)
         return df
 
-    data = {key: df.drop('ObjectId', axis=1) for key, df in data.items()}
+    data = {key: df.drop("ObjectId", axis=1) for key, df in data.items()}
     df = functools.reduce(
         ons_merge,
         data.values(),
     )
-    for suffix in ['_name', '_code']:
-        df[f'region{suffix}'] = df[f'region{suffix}'].fillna(df[f'country{suffix}'])
-        df[f'utla{suffix}'] = df[f'utla{suffix}'].fillna(df[f'la{suffix}'])
+    for suffix in ["_name", "_code"]:
+        df[f"region{suffix}"] = df[f"region{suffix}"].fillna(df[f"country{suffix}"])
+        df[f"utla{suffix}"] = df[f"utla{suffix}"].fillna(df[f"la{suffix}"])
 
     return df
-
 
 
 LTLA_UTLA = DataSource(
@@ -118,6 +118,6 @@ LTLA_COUNTRY = DataSource(
 
 LKP = DataAsset(
     name="LTLA/UTLA/Region/Country lookup",
-    inputs={'utla': LTLA_UTLA, 'region': LTLA_REGION, 'country': LTLA_COUNTRY},
-    processer=combine_lkps
+    inputs={"utla": LTLA_UTLA, "region": LTLA_REGION, "country": LTLA_COUNTRY},
+    processer=combine_lkps,
 )

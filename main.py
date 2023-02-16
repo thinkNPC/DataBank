@@ -2,10 +2,9 @@ import importlib
 import logging
 import sys
 
-from assets import ASSETS_DICT
+from assets import ASSETS_DICT, REPORT
 from combine import DataBank
 from models import Output
-
 
 logging.basicConfig(level=logging.INFO)
 
@@ -29,8 +28,16 @@ def run_all():
         logging.info(df.iloc[0].head())
 
 
+def report(fname):
+    with open(fname, "w") as f:
+        f.write("# Example DataBank report\n\n")
+        for asset in REPORT:
+            f.write(Output(asset).to_md_str())
+
+
 if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        asset = ASSETS_DICT[sys.argv[1]]
-        print(asset.name)
-        print(asset.get_data())
+    # if len(sys.argv) > 1:
+    #     asset = ASSETS_DICT[sys.argv[1]]
+    #     print(asset.name)
+    #     print(asset.get_data())
+    report("report.md")

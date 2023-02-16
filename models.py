@@ -4,9 +4,12 @@ from dataclasses import dataclass
 from enum import Enum
 
 import pandas as pd
+import plotly
 import slugify
 
 from utils import OUTPUT_DIR
+
+DATE_FMT = "%d %b %Y"
 
 
 class Organisations(Enum):
@@ -38,6 +41,7 @@ class DateMeta:
         self.publish_date = publish_date
         self.expected_lag = expected_lag
         self.date_keys = ["update_freq", "latest_date", "publish_date", "expected_lag"]
+        self.update_str = ""
 
     def update(self, dateUpdate):
         for key in self.date_keys:
@@ -52,6 +56,7 @@ class DateMeta:
     def validate(self, name):
         all_defined = all([bool(getattr(self, date)) for date in self.date_keys])
         checked = False
+        validity = None
 
         # check if publish date is too old
         if self.publish_date and self.update_freq:
@@ -61,6 +66,7 @@ class DateMeta:
                     f"Overdue data update: '{name}' was due an update on {update_due}."
                 )
                 logging.debug(self)
+                validity = False
             checked = True
 
         # check if latest data date is too lagged
@@ -71,6 +77,7 @@ class DateMeta:
                     f"Data is lagged more than expected: {name}, {self}, measured_lag={lag}."
                 )
                 logging.debug(self)
+                validity = False
             checked = True
 
         if not checked:
@@ -80,6 +87,9 @@ class DateMeta:
                         f"Unable to check for updates: Date object for '{name}'.{key} not set. {self}"
                     )
                     logging.debug(self)
+                    validity = False
+
+        return validity
 
     def __repr__(self):
         dates = {key: getattr(self, key) for key in self.date_keys}
@@ -119,6 +129,16 @@ class DataSource:
         self.data = dataDate.df
         return self.data
 
+    @property
+    def date_info(self):
+        valid = self.dateMeta.validate(self.name)
+        message = "up to date" if valid else "due update"
+        return (
+            f"{self.name} ({message}): "
+            f"latest data from: {self.dateMeta.latest_date.strftime(DATE_FMT)}; "
+            f"published on: {self.dateMeta.publish_date.strftime(DATE_FMT)}."
+        )
+
     def __repr__(self):
         return f"DataSource({self.name})"
 
@@ -127,10 +147,12 @@ class DataAsset:
     def __init__(
         self,
         name: str,
+        description: str = "",
         inputs: dict = {},
         processer=None,
     ):
         self.name = name
+        self.description = description
         self.inputs = inputs
         self.sources = self.collect_sources(inputs)
         self.processer = processer
@@ -154,6 +176,11 @@ class DataAsset:
                 raise RuntimeError
         return sources
 
+    @property
+    def date_updated_str(self):
+        dates = [source.date_info for source in self.sources]
+        return " ".join(dates)
+
     def __repr__(self):
         return f"DataAsset({self.name}, sources: {[source.name for source in self.sources]})"
 
@@ -162,10 +189,44 @@ class Output:
     def __init__(self, asset):
         self.asset = asset
 
-    def csv(self):
-        df = self.asset.get_data()
+    def to_md_str(self):
+        path = self.to_file()
+        assert path.endswith("png"), self.asset
+        lines = [
+            f"## {self.asset.name}",
+            f"![{self.asset.name}]({path})",
+            self.asset.description,
+            f"Source: {self.asset.date_updated_str}",
+        ]
+        return "\n\n".join(lines)
+
+    def to_file(self):
+        output = self.asset.get_data()
         fname = slugify.slugify(self.asset.name)
-        path = os.path.join(OUTPUT_DIR, f"{fname}.csv")
+        match type(output):
+            case pd.DataFrame:
+                path = self.write(output, fname, "csv", self.csv)
+            case plotly.graph_objects.Figure:
+                path = self.write(output, fname, "html", self.plotly_html)
+                path = self.write(output, fname, "png", self.plotly_png)
+            case _:
+                raise RuntimeError(
+                    f"unrecognised asset data type {type(output)} from {self.asset}"
+                )
+        return path
+
+    def write(self, output, fname, suffix, writer):
+        path = os.path.join(OUTPUT_DIR, f"{fname}.{suffix}")
         os.makedirs(OUTPUT_DIR, exist_ok=True)
-        df.to_csv(path)
+        writer(output, path)
         print(f"{self.asset.name} written to {path}")
+        return path
+
+    def csv(self, df, path):
+        df.to_csv(path)
+
+    def plotly_html(self, fig, path):
+        fig.write_html(path)
+
+    def plotly_png(self, fig, path):
+        fig.write_image(path)
