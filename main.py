@@ -2,7 +2,7 @@ import importlib
 import logging
 import sys
 
-from assets import ASSETS_DICT, REPORT
+from assets import ASSETS_DICT
 from combine import DataBank
 from models import Output
 
@@ -36,8 +36,8 @@ def report(fname):
 
 
 if __name__ == "__main__":
-    # if len(sys.argv) > 1:
-    #     asset = ASSETS_DICT[sys.argv[1]]
-    #     print(asset.name)
-    #     print(asset.get_data())
-    report("report.md")
+    if len(sys.argv) > 1:
+        asset = ASSETS_DICT[sys.argv[1]]
+        print(asset.name)
+        print(asset.get_data())
+        Output(asset).to_file()

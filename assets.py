@@ -1,5 +1,13 @@
+from models import Report
+from reports import summary
 from sources.partner import trusselltrust, turn2us
 from sources.public import census, charity_comission, imd
+
+SummaryReport = Report(
+    name="Example summary report",
+    assets=(trusselltrust.TrussellTrustHex,),
+)
+
 
 ASSETS = (
     turn2us.Turn2usProportional,
@@ -11,11 +19,7 @@ ASSETS = (
     trusselltrust.TrussellTrust,
     trusselltrust.TrussellTrustProportional,
     trusselltrust.TrussellTrustHex,
+    SummaryReport,
 )
 
 ASSETS_DICT = {asset.name: asset for asset in ASSETS}
-
-REPORT = (
-    trusselltrust.TrussellTrustHex,
-    # charity_comission.CharityDensityHex,
-)

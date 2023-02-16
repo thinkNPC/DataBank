@@ -185,6 +185,18 @@ class DataAsset:
         return f"DataAsset({self.name}, sources: {[source.name for source in self.sources]})"
 
 
+@dataclass
+class Report:
+    name: str
+    assets: tuple
+
+    def get_data(self):
+        print(self.assets)
+        title = f"# {self.name}"
+        content = [Output(asset).to_md_str() for asset in self.assets]
+        return "\n\n".join([title] + content)
+
+
 class Output:
     def __init__(self, asset):
         self.asset = asset
@@ -203,16 +215,17 @@ class Output:
     def to_file(self):
         output = self.asset.get_data()
         fname = slugify.slugify(self.asset.name)
-        match type(output):
-            case pd.DataFrame:
-                path = self.write(output, fname, "csv", self.csv)
-            case plotly.graph_objects.Figure:
-                path = self.write(output, fname, "html", self.plotly_html)
-                path = self.write(output, fname, "png", self.plotly_png)
-            case _:
-                raise RuntimeError(
-                    f"unrecognised asset data type {type(output)} from {self.asset}"
-                )
+        if isinstance(output, pd.DataFrame):
+            path = self.write(output, fname, "csv", self.csv)
+        elif isinstance(output, plotly.graph_objects.Figure):
+            path = self.write(output, fname, "html", self.plotly_html)
+            path = self.write(output, fname, "png", self.plotly_png)
+        elif isinstance(output, str):
+            path = self.write(output, fname, "md", self.md)
+        else:
+            raise RuntimeError(
+                f"unrecognised asset data type {type(output)} from {self.asset}"
+            )
         return path
 
     def write(self, output, fname, suffix, writer):
@@ -230,3 +243,7 @@ class Output:
 
     def plotly_png(self, fig, path):
         fig.write_image(path)
+
+    def md(self, string, path):
+        with open(path, "w") as f:
+            f.write(string)
