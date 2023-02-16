@@ -151,14 +151,8 @@ NCharitiesUTLAPerHead = DataAsset(
 
 def charity_map(data):
     df = data["n_charities"]
-    hexes = hex.get_hexes(hex.UTLA_HEXES)
-    hexes = hexes.rename(
-        columns={
-            "CTYUA22CD": "utla_code",
-        }
-    )
-    fig = hex.plot_hexes(hexes, df, "utla_code", "per_1000")
-    fig.show()
+    fig = hex.plot_hexes(df, "UTLA", "per_1000")
+    return fig
 
 
 CharityDensityHex = DataAsset(

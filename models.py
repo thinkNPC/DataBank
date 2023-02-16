@@ -133,11 +133,12 @@ class DataSource:
     def date_info(self):
         valid = self.dateMeta.validate(self.name)
         message = "up to date" if valid else "due update"
-        return (
-            f"{self.name} ({message}): "
-            f"latest data from: {self.dateMeta.latest_date.strftime(DATE_FMT)}; "
-            f"published on: {self.dateMeta.publish_date.strftime(DATE_FMT)}."
-        )
+        output = f"{self.name} ({message}): "
+        if self.dateMeta.latest_date:
+            output += f"latest data from: {self.dateMeta.latest_date.strftime(DATE_FMT)}; "
+        if self.dateMeta.publish_date:
+            output += f"published on: {self.dateMeta.publish_date.strftime(DATE_FMT)}."
+        return output
 
     def __repr__(self):
         return f"DataSource({self.name})"
@@ -191,7 +192,6 @@ class Report:
     assets: tuple
 
     def get_data(self):
-        print(self.assets)
         title = f"# {self.name}"
         content = [Output(asset).to_md_str() for asset in self.assets]
         return "\n\n".join([title] + content)

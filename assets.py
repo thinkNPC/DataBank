@@ -5,7 +5,10 @@ from sources.public import census, charity_comission, imd
 
 SummaryReport = Report(
     name="Example summary report",
-    assets=(trusselltrust.TrussellTrustHex,),
+    assets=(
+        charity_comission.CharityDensityHex,
+        trusselltrust.TrussellTrustHex,
+    ),
 )
 
 

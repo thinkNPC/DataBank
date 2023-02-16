@@ -65,14 +65,7 @@ TrussellTrustProportional = DataAsset(
 
 def trussell_hex(data):
     df = data["trussell"]
-    hexes = hex.get_hexes(hex.LTLA_HEXES)
-    hexes = hexes.rename(
-        columns={
-            "LAD22CD": "la_code",
-        }
-    )
-    print(hexes)
-    fig = hex.plot_hexes(hexes, df, "la_code", "Total number of parcels distributed")
+    fig = hex.plot_hexes(df, "LTLA", "Total number of parcels distributed")
     return fig
 
 
