@@ -65,45 +65,37 @@ def get_hexes(geography_level):
 def plot_hexes(df, geography, plot_col, palette="magma_r"):
     G = GEOGRAPHY[geography]
     hexes = get_hexes(G)
-
     df = pd.merge(hexes, df, how="left", on=G.code_col)
+
     fig = go.Figure()
     df["display_color"] = df[plot_col]
     zmax = 15
     mask = df["display_color"] > zmax
     df.loc[mask, "display_color"] = zmax
 
-    df_valid = df.loc[df[plot_col].notnull()]
-    fig.add_trace(
-        go.Scatter(
-            x=df_valid["grid_x"],
-            y=df_valid["grid_y"],
-            text=df_valid[G.name_col],
-            mode="markers",
-            marker_symbol="hexagon",
-            marker_size=12,
-            marker_color=df_valid["display_color"],
-            marker=dict(
-                colorscale=sns.color_palette(palette).as_hex(),
-            ),
-            customdata=df_valid[plot_col],
-            hovertemplate="%{text} - %{customdata}",
-            name="",
+    df_valid = df.loc[df[plot_col].notnull()].copy()
+    df_null = df.loc[df[plot_col].isnull()].copy()
+    df_null["display_color"] = NULL_GREY
+
+    for sub_df in [df_valid, df_null]:
+        fig.add_trace(
+            go.Scatter(
+                x=sub_df["grid_x"],
+                y=sub_df["grid_y"],
+                mode="markers",
+                marker_symbol="hexagon",
+                marker_size=12,
+                marker_color=sub_df["display_color"],
+                marker=dict(
+                    colorscale=sns.color_palette(palette).as_hex(),
+                ),
+                text=sub_df[G.name_col],
+                customdata=sub_df[plot_col],
+                hovertemplate="%{text} - %{customdata}",
+                name="",
+            )
         )
-    )
-    df_null = df.loc[df[plot_col].isnull()]
-    fig.add_trace(
-        go.Scatter(
-            x=df_null["grid_x"],
-            y=df_null["grid_y"],
-            text=df_null[G.name_col],
-            hoverinfo="z+text",
-            mode="markers",
-            marker_symbol="hexagon",
-            marker_size=12,
-            marker_color=NULL_GREY,
-        )
-    )
+    
     fig.update_yaxes(
         scaleanchor="x",
         scaleratio=1,
