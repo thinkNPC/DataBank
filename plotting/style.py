@@ -17,6 +17,7 @@ npc_grey = "#E1E1E1"
 chart_background = "#f7f7f7"
 dark_grey = "#333333"
 NULL_GREY = "#CCCCCC"
+CONTRAST = "#2A52BE"
 
 npc_logo = "https://npproduction.wpenginepowered.com/wp-content/themes/npc/img/logos/npc-logo.svg"
 

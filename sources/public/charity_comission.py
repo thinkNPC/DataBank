@@ -4,6 +4,7 @@ import logging
 import zipfile
 from functools import partial
 
+import numpy as np
 import pandas as pd
 import requests
 import seaborn as sns
@@ -129,7 +130,6 @@ def charities_by_la(data):
     cc = data['CC']
     area = data["CC_Area"]
     lkp = data["ltla_utla"]
-
     
     # merge so that only active charities are kept
     drop_cols = ['date_of_extract', 'linked_charity_number']
@@ -161,10 +161,37 @@ def charities_by_la(data):
     df = df.merge(split_las, how='left')
     df['split_expenditure'] = df['latest_expenditure'].divide(df['split'])
 
-    # aggregate to utla
-    df = df[['utla_name', 'organisation_number', 'split_expenditure']]
+    # Charity commission do not use standard area codes, so clean them up
+    df["utla_clean"] = df["utla_name"].apply(clean_utla_names)
+    lkp["utla_clean"] = lkp["utla_name"].apply(clean_utla_names)
+    df = df.merge(
+        lkp, on="utla_clean", how='outer', suffixes=("_cc", "_ons")
+    )
+
+    # fill unmatched ons utla names with CC names, they don't have utla_codes
+    df = df.rename(columns={"utla_name_ons": "utla_name"})
+    df["utla_name"] = df["utla_name"].fillna(df["utla_name_cc"])
+    no_match = df["utla_code"].isnull()
+    logging.warning(
+        f"No matches for {[name for name in df.loc[no_match, 'utla_name_cc'].unique()]}"
+    )
+    return df
+
+
+CC_AREA_ACTIVE = DataAsset(
+    name="Active charities by area",
+    inputs={"CC": CC_ACTIVE, "CC_Area": CC_AREA, "ltla_utla": LTLA_UTLA},
+    processer=charities_by_la,
+    description=(
+        "Where charity has UTLA or region info."
+    )
+)
+
+def n_charities_by_la(data):
+    df = data['cc']
+    df = df[['utla_code', 'utla_name', 'organisation_number', 'split_expenditure']]
     df = (
-        df.groupby("utla_name")
+        df.groupby(['utla_code', "utla_name"])
         .agg({
             'organisation_number': 'count',
             'split_expenditure': 'sum'
@@ -177,26 +204,17 @@ def charities_by_la(data):
         .reset_index()
     )
 
-
-    # Charity commission do not use standard area codes, so clean them up
-    df["utla_clean"] = df["utla_name"].apply(clean_utla_names)
-    lkp["utla_clean"] = lkp["utla_name"].apply(clean_utla_names)
-    df = df.merge(
-        lkp, on="utla_clean", how='outer', suffixes=("_cc", "_ons")
-    )
-
-    # fill unmatched ons utla names with CC names, they don't have utla_codes
-    df = df.rename(columns={"utla_name_ons": "utla_name"})
-    df["utla_name"] = df["utla_name"].fillna(df["utla_name_cc"])
-    print('ltla matched:', len(df))
-    no_match = df["utla_code"].isnull()
-    logging.warning(
-        f"No matches for {[name for name in df.loc[no_match, 'utla_name_cc']]}"
-    )
-    df = df.drop_duplicates(subset=['utla_code'])
-
-    return df[['utla_code', 'utla_name', 'count', 'total_spent']]
-
+    df =  df[['utla_code', 'utla_name', 'count', 'total_spent']]
+    codes_not_in_set = data['cc'].loc[
+        data['cc']['organisation_number'].isnull(),
+        'utla_code'
+    ]
+    df.loc[
+        df['utla_code'].isin(codes_not_in_set),
+        ['count', 'total_spent']
+    ] = np.nan
+    
+    return df
 
 def normalise_charities_utla(data):
     pop = data["ltla_pop"]
@@ -224,8 +242,8 @@ def normalise_charities_utla(data):
 
 N_CHARITIES_UTLA = DataAsset(
     name="Number of active charities operational by UTLA",
-    inputs={"CC": CC_ACTIVE, "CC_Area": CC_AREA, "ltla_utla": LTLA_UTLA},
-    processer=charities_by_la,
+    inputs={'cc': CC_AREA_ACTIVE},
+    processer=n_charities_by_la,
     description=(
         "Only ~60\% of charities have a UTLA defined to them."
     )
@@ -258,7 +276,6 @@ def charity_map(data):
 
 def charity_spent_map(data):
     df = data["n_charities"]
-    print(df.sort_values('spent_per_head', ascending=False))
     fig = hex.plot_hexes(df, "UTLA", "spent_per_head", zmax=get_n_highest(df, 'spent_per_head', 3))
     return fig
 
@@ -284,6 +301,31 @@ def charity_spend_by_lvlup_strip(data):
     
     return fig
 
+
+def charity_spend_by_lvlup_hex(data):
+    df = pd.merge(
+        data['n_charities'],
+        data['lvlup_areas'].drop(columns='utla_name'),
+        how='outer',
+        on='utla_code',
+    )
+
+    lvl1 = df.loc[df['Category'] == 1, 'utla_code']
+    fig = hex.plot_hexes(
+        df,
+        "UTLA",
+        "spent_per_head",
+        zmax=get_n_highest(df, 'spent_per_head', 3),
+        highlight=lvl1,
+    )
+
+    df['Category'] = df['Category'].round(0)
+    
+    style.npc_style(fig)
+
+    return fig
+
+
 CharityDensityHex = DataAsset(
     name="Charities per head in each local authority hexmap",
     inputs={
@@ -308,3 +350,14 @@ CharitySpendLvlupStrip = DataAsset(
     },
     processer=charity_spend_by_lvlup_strip,
 )
+
+CharitySpendLvlupHex = DataAsset(
+    name="Charities spend by levelling up area hexmap",
+    inputs={
+        "n_charities": NCharitiesUTLAPerHead,
+        'lvlup_areas': LVL_BY_UTLA,
+    },
+    processer=charity_spend_by_lvlup_hex,
+)
+
+#SightCharitiesNW = 

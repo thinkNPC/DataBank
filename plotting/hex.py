@@ -9,7 +9,7 @@ import plotly.graph_objects as go
 import seaborn as sns
 
 import utils
-from plotting.style import NULL_GREY, npc_style
+from plotting.style import NULL_GREY, npc_style, CONTRAST
 
 UTLA_HEXES = "utla_hex.csv"
 LTLA_HEXES = "ltla_hex.csv"
@@ -62,7 +62,7 @@ def get_hexes(geography_level):
     return df
 
 
-def plot_hexes(df, geography, plot_col, palette="magma_r", zmax=None):
+def plot_hexes(df, geography, plot_col, palette="magma_r", zmax=None, highlight=None):
     G = GEOGRAPHY[geography]
     hexes = get_hexes(G)
     df = pd.merge(hexes, df, how="left", on=G.code_col)
@@ -96,6 +96,26 @@ def plot_hexes(df, geography, plot_col, palette="magma_r", zmax=None):
             )
         )
     
+    if highlight is not None:
+        dfh = df[df[G.code_col].isin(highlight.values)]
+        fig.add_trace(
+                go.Scatter(
+                x=dfh["grid_x"],
+                y=dfh["grid_y"],
+                mode="markers",
+                hoverinfo='skip',
+                marker=dict(
+                    symbol="hexagon",
+                    size=12,
+                    color='rgba(0,0,0,0)',
+                    line=dict(
+                        color=CONTRAST,
+                        width=1.5,
+                    )
+                )
+            )
+        )
+
     fig.update_yaxes(
         scaleanchor="x",
         scaleratio=1,
