@@ -210,7 +210,7 @@ class Output:
         # TODO group files needed for report into a dir
         path = os.path.normpath(path).split(os.sep)
         path = os.path.join(*path[1:])
-        assert path.endswith("png"), self.asset
+        assert path.endswith("png"), ('Not a valid markdown asset', self.asset)
         lines = [
             f"## {self.asset.name}",
             f"![{self.asset.name}]({path})",

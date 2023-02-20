@@ -9,6 +9,7 @@ SummaryReport = Report(
         charity_comission.CharityDensityHex,
         trusselltrust.TrussellTrustHex,
         levellingup.LEVELLING_UP_HEX,
+        levellingup.LEVELLING_UP_UTLA_HEX,
     ),
 )
 
@@ -19,8 +20,14 @@ ASSETS = (
     census.ETHNICITY_LA,
     census.AGE_SEX_LA,
     census.POP_LA,
+    charity_comission.CC_MAIN,
+    charity_comission.CC_AREA,
+    charity_comission.CC_ACTIVE,
+    charity_comission.N_CHARITIES_UTLA,
     charity_comission.CharityDensityHex,
+    charity_comission.CharityDesnityLvlup,
     levellingup.LEVELLING_UP,
+    levellingup.LVL_BY_UTLA,
     levellingup.LEVELLING_UP_HEX,
     trusselltrust.TrussellTrust,
     trusselltrust.TrussellTrustProportional,

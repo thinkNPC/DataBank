@@ -12,6 +12,7 @@ from models import (DataAsset, DataDate, DataSource, DateMeta, Organisations,
 from plotting import hex
 from sources.public.census import POP_LA
 from sources.public.geoportal import LTLA_UTLA
+from sources.public.levellingup import LVL_BY_UTLA
 from utils import CACHE, DATA_DIR
 
 CC_ENDPOINT = "https://ccewuksprdoneregsadata1.blob.core.windows.net/data/json/publicextract.charity.zip"
@@ -24,6 +25,7 @@ APPROX_MONTH = pd.Timedelta("31 days")
 def get_charity_commission_dataset(endpoint, fname):
     r = requests.get(endpoint)
     with zipfile.ZipFile(io.BytesIO(r.content)) as z:
+        assert fname in z.namelist(), z.namelist()
         with z.open(fname) as f:
             data = json.load(f)
     date = data[0]["date_of_extract"]
@@ -33,12 +35,63 @@ def get_charity_commission_dataset(endpoint, fname):
     date = pd.to_datetime(date)
     return DataDate(df, DateMeta(publish_date=date))
 
+def get_cc_main():
+    datadate = get_charity_commission_dataset(
+        CC_ENDPOINT, 'publicextract.charity.json'
+    )
+    return datadate
 
 def get_cc_area():
-    return get_charity_commission_dataset(
+    datadate = get_charity_commission_dataset(
         CC_AREA_EP, "publicextract.charity_area_of_operation.json"
     )
+    return datadate
 
+
+def filter_active_charities(data):
+    df = data['cc']
+
+    # date_of_registration, ~30000 in last five years
+    # acc fin period - not needed as report status covers this
+    # ~10% of active charities have income/expenditure of 0
+    # 99% have address and phone
+    # 85% have email, 66% have website
+    # Uniform spread between 0-80 descriptions
+
+    print('no filter N =', len(df))
+    # 'registered' or 'removed'
+    df = df[df['charity_registration_status'] == 'Registered']
+    # ~70% of registered charities have submission recieved, others are overdue or sim
+    df = df[df['charity_reporting_status'] == 'Submission Received']
+    
+    df = df[df['charity_insolvent'] == False]
+    df = df[df['charity_in_administration'] == False]
+    print('after filter N =', len(df))
+
+    if False:
+        import matplotlib.pyplot as plt
+        col = 'charity_activities'
+        fig = df[col].hist(log=True, alpha=0.5, bins=20)
+        plt.savefig('temp-post.png')
+    return df
+
+CC_MAIN = DataSource(
+    name="Charity comission summary table",
+    data_getter=get_cc_main,
+    org=Organisations.charity_commission,
+    source_type=SourceType.webscrape,
+    url="https://register-of-charities.charitycommission.gov.uk/register/full-register-download",
+    dateMeta=DateMeta(update_freq=APPROX_MONTH),
+    description="""
+    Summary info of charities registered in England & Wales
+    """,
+)
+
+CC_ACTIVE = DataAsset(
+    name="Estimated active charities",
+    inputs={'cc': CC_MAIN},
+    processer=filter_active_charities,
+)
 
 CC_AREA = DataSource(
     name="Charity area of operation",
@@ -53,6 +106,7 @@ CC_AREA = DataSource(
     or multiple areas at the same level.
     """,
 )
+
 
 
 def clean_utla_names(s):
@@ -71,43 +125,73 @@ def clean_utla_names(s):
 
 
 def charities_by_la(data):
-    df = data["CC_Area"]
+    cc = data['CC']
+    area = data["CC_Area"]
     lkp = data["ltla_utla"]
-    df = df[df["geographic_area_type"] == "Local Authority"]
 
-    df = df[["geographic_area_description", "registered_charity_number"]]
+    
+    # merge so that only active charities are kept
+    drop_cols = ['date_of_extract', 'linked_charity_number']
+    df = area.drop(
+        columns=drop_cols,
+    ).merge(
+        cc, 
+        on=['organisation_number', 'registered_charity_number'],
+        how='inner',
+    )
+
+    # only interested in charities with a LA documented
+    df = df[df["geographic_area_type"] == "Local Authority"]
     df = df.rename(
         columns={
             "geographic_area_description": "utla_name",
-            "registered_charity_number": "count",
         }
     )
+
+    # split expenditure over las mentioned per charity
+    df = df[['organisation_number', 'latest_expenditure',
+       'utla_name']]
+    split_las = df['organisation_number'].value_counts()
+    split_las = pd.DataFrame(split_las).reset_index()
+    split_las = split_las.rename(columns={
+        'index': 'organisation_number',
+        'organisation_number': 'split',
+    })
+    df = df.merge(split_las, how='left')
+    df['split_expenditure'] = df['latest_expenditure'].divide(df['split'])
+
+    # aggregate to utla
+    df = df[['utla_name', 'organisation_number', 'split_expenditure']]
     df = (
         df.groupby("utla_name")
-        .count()
-        .sort_values("count", ascending=False)
+        .agg({
+            'organisation_number': 'count',
+            'split_expenditure': 'sum'
+        })
+        .rename(columns={
+            'organisation_number': 'count',
+            'split_expenditure': 'total_spent',
+        })
+        .sort_values("total_spent", ascending=False)
         .reset_index()
     )
 
     # Charity commission do not use standard area codes, so clean them up
     df["utla_clean"] = df["utla_name"].apply(clean_utla_names)
     lkp["utla_clean"] = lkp["utla_name"].apply(clean_utla_names)
-
     df = df.merge(
-        lkp, on="utla_clean", how="left", suffixes=("_cc", "_ons")
-    ).drop_duplicates(subset=["utla_clean"])
-
-    no_match = df["utla_code"].isnull()
-    logging.warning(
-        f"No matches for {[name for name in df.loc[no_match, 'utla_name_cc']]}"
+        lkp, on="utla_clean", how='outer', suffixes=("_cc", "_ons")
     )
 
     # fill unmatched ons utla names with CC names, they don't have utla_codes
     df = df.rename(columns={"utla_name_ons": "utla_name"})
     df["utla_name"] = df["utla_name"].fillna(df["utla_name_cc"])
-
-    df = df[["utla_code", "utla_name", "count"]]
-    return df
+    print('ltla matched:', len(df))
+    no_match = df["utla_code"].isnull()
+    logging.warning(
+        f"No matches for {[name for name in df.loc[no_match, 'utla_name_cc']]}"
+    )
+    return df[['utla_code', 'utla_name', 'count', 'total_spent']]
 
 
 def normalise_charities_utla(data):
@@ -130,12 +214,15 @@ def normalise_charities_utla(data):
     df["per_1000"] = 1000 * df["count"] / df["population"]
     df = df.sort_values("per_1000", ascending=False)
     return df
-
+    
 
 N_CHARITIES_UTLA = DataAsset(
-    name="Number of charities operational by UTLA",
-    inputs={"CC_Area": CC_AREA, "ltla_utla": LTLA_UTLA},
+    name="Number of active charities operational by UTLA",
+    inputs={"CC": CC_ACTIVE, "CC_Area": CC_AREA, "ltla_utla": LTLA_UTLA},
     processer=charities_by_la,
+    description=(
+        "Only ~60\% of charities have a UTLA defined to them."
+    )
 )
 
 NCharitiesUTLAPerHead = DataAsset(
@@ -154,6 +241,20 @@ def charity_map(data):
     fig = hex.plot_hexes(df, "UTLA", "per_1000")
     return fig
 
+def charity_lvlup_map(data):
+    print(data)
+    df = pd.merge(
+        data['n_charities'],
+        data['lvlup_areas'],
+        how='outer',
+        on='utla_code',
+    )
+    import plotly.express as px
+
+    fig = px.scatter(df, x='Category', y='per_1000')
+    fig.show()
+    
+    return df
 
 CharityDensityHex = DataAsset(
     name="Charities per head in each local authority",
@@ -161,4 +262,13 @@ CharityDensityHex = DataAsset(
         "n_charities": NCharitiesUTLAPerHead,
     },
     processer=charity_map,
+)
+
+CharityDesnityLvlup = DataAsset(
+    name="Charities per head and levelling up areas",
+    inputs={
+        "n_charities": NCharitiesUTLAPerHead,
+        'lvlup_areas': LVL_BY_UTLA,
+    },
+    processer=charity_lvlup_map,
 )

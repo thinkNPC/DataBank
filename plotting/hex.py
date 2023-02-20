@@ -91,7 +91,7 @@ def plot_hexes(df, geography, plot_col, palette="magma_r"):
                 ),
                 text=sub_df[G.name_col],
                 customdata=sub_df[plot_col],
-                hovertemplate="%{text} - %{customdata}",
+                hovertemplate="%{text}: %{customdata}",
                 name="",
             )
         )
