@@ -206,6 +206,10 @@ class Output:
 
     def to_md_str(self):
         path = self.to_file()
+        # point to output file as report will be there too
+        # TODO group files needed for report into a dir
+        path = os.path.normpath(path).split(os.sep)
+        path = os.path.join(*path[1:])
         assert path.endswith("png"), self.asset
         lines = [
             f"## {self.asset.name}",
