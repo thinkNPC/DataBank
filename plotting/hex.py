@@ -62,16 +62,16 @@ def get_hexes(geography_level):
     return df
 
 
-def plot_hexes(df, geography, plot_col, palette="magma_r"):
+def plot_hexes(df, geography, plot_col, palette="magma_r", zmax=None):
     G = GEOGRAPHY[geography]
     hexes = get_hexes(G)
     df = pd.merge(hexes, df, how="left", on=G.code_col)
 
     fig = go.Figure()
     df["display_color"] = df[plot_col]
-    zmax = 15
-    mask = df["display_color"] > zmax
-    df.loc[mask, "display_color"] = zmax
+    if zmax:
+        mask = df["display_color"] > zmax
+        df.loc[mask, "display_color"] = zmax
 
     df_valid = df.loc[df[plot_col].notnull()].copy()
     df_null = df.loc[df[plot_col].isnull()].copy()
@@ -90,7 +90,7 @@ def plot_hexes(df, geography, plot_col, palette="magma_r"):
                     colorscale=sns.color_palette(palette).as_hex(),
                 ),
                 text=sub_df[G.name_col],
-                customdata=sub_df[plot_col],
+                customdata=sub_df[plot_col].round(0),
                 hovertemplate="%{text}: %{customdata}",
                 name="",
             )

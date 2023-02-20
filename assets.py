@@ -7,9 +7,11 @@ SummaryReport = Report(
     name="Report",
     assets=(
         charity_comission.CharityDensityHex,
-        trusselltrust.TrussellTrustHex,
+        charity_comission.CharitySpendDensityHex,
         levellingup.LEVELLING_UP_HEX,
         levellingup.LEVELLING_UP_UTLA_HEX,
+        charity_comission.CharityDesnityLvlup,
+        trusselltrust.TrussellTrustHex,
     ),
 )
 
@@ -24,6 +26,8 @@ ASSETS = (
     charity_comission.CC_AREA,
     charity_comission.CC_ACTIVE,
     charity_comission.N_CHARITIES_UTLA,
+    charity_comission.NCharitiesUTLAPerHead,
+    charity_comission.CharitySpendDensityHex,
     charity_comission.CharityDensityHex,
     charity_comission.CharityDesnityLvlup,
     levellingup.LEVELLING_UP,

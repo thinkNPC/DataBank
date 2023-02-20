@@ -6,10 +6,11 @@ from functools import partial
 
 import pandas as pd
 import requests
+import seaborn as sns
 
 from models import (DataAsset, DataDate, DataSource, DateMeta, Organisations,
                     SourceType)
-from plotting import hex
+from plotting import hex, style
 from sources.public.census import POP_LA
 from sources.public.geoportal import LTLA_UTLA
 from sources.public.levellingup import LVL_BY_UTLA
@@ -176,6 +177,7 @@ def charities_by_la(data):
         .reset_index()
     )
 
+
     # Charity commission do not use standard area codes, so clean them up
     df["utla_clean"] = df["utla_name"].apply(clean_utla_names)
     lkp["utla_clean"] = lkp["utla_name"].apply(clean_utla_names)
@@ -191,6 +193,8 @@ def charities_by_la(data):
     logging.warning(
         f"No matches for {[name for name in df.loc[no_match, 'utla_name_cc']]}"
     )
+    df = df.drop_duplicates(subset=['utla_code'])
+
     return df[['utla_code', 'utla_name', 'count', 'total_spent']]
 
 
@@ -207,12 +211,14 @@ def normalise_charities_utla(data):
     )
 
     df = pd.merge(
-        utla_pop,
         data["n_charities"],
-        how="outer",
+        utla_pop,
+        how="left",
     )
-    df["per_1000"] = 1000 * df["count"] / df["population"]
-    df = df.sort_values("per_1000", ascending=False)
+    df["count_per_1000"] = 1000 * df["count"] / df["population"]
+    df["spent_per_head"] = df["total_spent"] / df["population"]
+
+    df = df.sort_values("spent_per_head", ascending=False)
     return df
     
 
@@ -235,33 +241,68 @@ NCharitiesUTLAPerHead = DataAsset(
     processer=normalise_charities_utla,
 )
 
+def get_n_highest(df, col, n):
+    return (
+        df
+        .sort_values(col, ascending=False)
+        .iloc[n][col]
+    )
 
 def charity_map(data):
     df = data["n_charities"]
-    fig = hex.plot_hexes(df, "UTLA", "per_1000")
+
+    fig = hex.plot_hexes(df, "UTLA", "count_per_1000", 
+                         zmax=get_n_highest(df, 'count_per_1000', 3))
     return fig
+
+
+def charity_spent_map(data):
+    df = data["n_charities"]
+    print(df.sort_values('spent_per_head', ascending=False))
+    fig = hex.plot_hexes(df, "UTLA", "spent_per_head", zmax=get_n_highest(df, 'spent_per_head', 3))
+    return fig
+
 
 def charity_lvlup_map(data):
     print(data)
     df = pd.merge(
         data['n_charities'],
-        data['lvlup_areas'],
+        data['lvlup_areas'].drop(columns='utla_name'),
         how='outer',
         on='utla_code',
     )
+    print(df)
     import plotly.express as px
+    pal =sns.color_palette('magma_r').as_hex()
+    pal = [pal[1], pal[3], pal[5]]
+    df['Category'] = df['Category'].round(0)
+    print(df.groupby('Category').count())
+    print(df.groupby('Category').sum())
+    print(df.sort_values('population', ascending=False))
 
-    fig = px.scatter(df, x='Category', y='per_1000')
-    fig.show()
+    fig = px.strip(df, x='Category', y='spent_per_head', 
+                   color='Category',
+                   hover_data=['utla_name'],
+                   log_y=True,
+                   color_discrete_sequence=pal)
+    style.npc_style(fig)
     
-    return df
+    return fig
 
 CharityDensityHex = DataAsset(
-    name="Charities per head in each local authority",
+    name="Charities per head in each local authority hexmap",
     inputs={
         "n_charities": NCharitiesUTLAPerHead,
     },
     processer=charity_map,
+)
+
+CharitySpendDensityHex = DataAsset(
+    name="Charity expenditure per head in each local authority hexmap",
+    inputs={
+        "n_charities": NCharitiesUTLAPerHead,
+    },
+    processer=charity_spent_map,
 )
 
 CharityDesnityLvlup = DataAsset(
