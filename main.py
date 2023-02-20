@@ -28,3 +28,4 @@ if __name__ == "__main__":
         print(asset.name)
         print(asset.get_data())
         Output(asset).to_file()
+        print(asset.date_updated_str)

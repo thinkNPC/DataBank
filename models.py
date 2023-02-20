@@ -68,6 +68,8 @@ class DateMeta:
                 )
                 logging.debug(self)
                 validity = False
+            else:
+                validity = True
             checked = True
 
         # check if latest data date is too lagged
@@ -79,6 +81,8 @@ class DateMeta:
                 )
                 logging.debug(self)
                 validity = False
+            else:
+                validity = True
             checked = True
 
         if not checked:
@@ -88,7 +92,7 @@ class DateMeta:
                         f"Unable to check for updates: Date object for '{name}'.{key} not set. {self}"
                     )
                     logging.debug(self)
-                    validity = False
+                    validity = None
 
         return validity
 
@@ -133,7 +137,16 @@ class DataSource:
     @property
     def date_info(self):
         valid = self.dateMeta.validate(self.name)
-        message = "up to date" if valid else "due update"
+
+        if valid is True:
+            message = "up to date"
+        elif valid is False:
+            message = "due update"  
+        elif valid is None:
+            message = "no update info"
+        else:
+            raise RuntimeError
+        
         output = f"{self.name} ({message}): "
         if self.dateMeta.latest_date:
             output += (
