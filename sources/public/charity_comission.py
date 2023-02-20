@@ -263,22 +263,17 @@ def charity_spent_map(data):
     return fig
 
 
-def charity_lvlup_map(data):
-    print(data)
+def charity_spend_by_lvlup_strip(data):
     df = pd.merge(
         data['n_charities'],
         data['lvlup_areas'].drop(columns='utla_name'),
         how='outer',
         on='utla_code',
     )
-    print(df)
     import plotly.express as px
     pal =sns.color_palette('magma_r').as_hex()
     pal = [pal[1], pal[3], pal[5]]
     df['Category'] = df['Category'].round(0)
-    print(df.groupby('Category').count())
-    print(df.groupby('Category').sum())
-    print(df.sort_values('population', ascending=False))
 
     fig = px.strip(df, x='Category', y='spent_per_head', 
                    color='Category',
@@ -305,11 +300,11 @@ CharitySpendDensityHex = DataAsset(
     processer=charity_spent_map,
 )
 
-CharityDesnityLvlup = DataAsset(
-    name="Charities per head and levelling up areas",
+CharitySpendLvlupStrip = DataAsset(
+    name="Charities spend by levelling up area violin plot",
     inputs={
         "n_charities": NCharitiesUTLAPerHead,
         'lvlup_areas': LVL_BY_UTLA,
     },
-    processer=charity_lvlup_map,
+    processer=charity_spend_by_lvlup_strip,
 )

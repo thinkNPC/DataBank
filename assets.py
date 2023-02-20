@@ -10,7 +10,7 @@ SummaryReport = Report(
         charity_comission.CharitySpendDensityHex,
         levellingup.LEVELLING_UP_HEX,
         levellingup.LEVELLING_UP_UTLA_HEX,
-        charity_comission.CharityDesnityLvlup,
+        charity_comission.CharitySpendLvlupStrip,
         trusselltrust.TrussellTrustHex,
     ),
 )
@@ -29,7 +29,7 @@ ASSETS = (
     charity_comission.NCharitiesUTLAPerHead,
     charity_comission.CharitySpendDensityHex,
     charity_comission.CharityDensityHex,
-    charity_comission.CharityDesnityLvlup,
+    charity_comission.CharitySpendLvlupStrip,
     levellingup.LEVELLING_UP,
     levellingup.LVL_BY_UTLA,
     levellingup.LEVELLING_UP_HEX,
