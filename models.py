@@ -106,7 +106,6 @@ class DataDate:
     df: pd.DataFrame
     dateMeta: DateMeta
 
-
 @dataclass
 class DataSource:
     name: str
@@ -141,12 +140,12 @@ class DataSource:
         if valid is True:
             message = "up to date"
         elif valid is False:
-            message = "due update"  
+            message = "due update"
         elif valid is None:
             message = "no update info"
         else:
             raise RuntimeError
-        
+
         output = f"{self.name} ({message}): "
         if self.dateMeta.latest_date:
             output += (
@@ -157,7 +156,7 @@ class DataSource:
         return output
 
     def __repr__(self):
-        return f"DataSource({self.name})"
+        return f"DataSource({self.name}, {self.source_type.name})"
 
 
 class DataAsset:
@@ -206,6 +205,7 @@ class DataAsset:
 class Report:
     name: str
     assets: tuple
+    sources = set()
 
     def get_data(self):
         title = f"# {self.name}"
@@ -225,11 +225,11 @@ class Output:
         if path.endswith("html"):
             with open(path) as f:
                 content = f.read()
-        elif path.endswith('png'):
+        elif path.endswith("png"):
             subpath = os.path.join(*splitpath[1:])
             content = f"![{self.asset.name}]({subpath})"
         else:
-            assert RuntimeError('Not a valid markdown asset', self.asset)
+            assert RuntimeError("Not a valid markdown asset", self.asset)
 
         lines = [
             f"## {self.asset.name}",
@@ -266,7 +266,7 @@ class Output:
         df.to_csv(path)
 
     def plotly_html(self, fig, path):
-        fig.write_html(path, full_html=False, include_plotlyjs='cdn')
+        fig.write_html(path, full_html=False, include_plotlyjs="cdn")
 
     def plotly_png(self, fig, path):
         fig.write_image(path, scale=3)

@@ -2,9 +2,9 @@ import importlib
 import logging
 import sys
 
-from assets import ASSETS_DICT
+import assets
 from combine import DataBank
-from models import Output
+import models
 
 logging.basicConfig(level=logging.INFO)
 
@@ -21,9 +21,24 @@ def run_all():
         logging.info(asset)
         logging.info(df.iloc[0].head())
 
+def all_sources():
+    for source in assets.all_sources():
+        print(source)
 
+def sources_up_to_date():
+    for source in assets.all_sources():
+        #source.get_data()
+        print(source.date_info)
+
+    
 if __name__ == "__main__":
     if len(sys.argv) > 1:
-        asset = ASSETS_DICT[sys.argv[1]]
-        print(asset.name)
-        Output(asset).to_file()
+        key = sys.argv[1]
+        if key == 'sources':
+            all_sources()
+        elif key == 'sources_up_to_date':
+            sources_up_to_date()
+        else:
+            asset = assets.ASSETS_DICT[key]
+            print(asset.name)
+            models.Output(asset).to_file()

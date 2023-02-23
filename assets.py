@@ -1,9 +1,8 @@
-from models import Report
-from reports import summary
+import models
 from sources.partner import trusselltrust, turn2us
 from sources.public import census, charity_comission, imd, levellingup
 
-SummaryReport = Report(
+SummaryReport = models.Report(
     name="Report",
     assets=(
         charity_comission.CharityDensityHex,
@@ -43,3 +42,15 @@ ASSETS = (
 )
 
 ASSETS_DICT = {asset.name: asset for asset in ASSETS}
+
+def all_sources():
+    all_sources = []
+    for key, asset in ASSETS_DICT.items():
+        if isinstance(asset, models.DataSource):
+            sources = [asset]
+        else:
+            sources = asset.sources
+        for s in sources:
+            if all(s.name != source.name for source in all_sources):
+                all_sources.append(s)
+    return all_sources

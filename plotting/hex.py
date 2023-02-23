@@ -9,7 +9,7 @@ import plotly.graph_objects as go
 import seaborn as sns
 
 import utils
-from plotting.style import NULL_GREY, npc_style, CONTRAST
+from plotting.style import CONTRAST, NULL_GREY, npc_style
 
 UTLA_HEXES = "utla_hex.csv"
 LTLA_HEXES = "ltla_hex.csv"
@@ -62,7 +62,9 @@ def get_hexes(geography_level):
     return df
 
 
-def plot_hexes(df, geography, plot_col, palette="magma_r", zmax=None, highlight=None, title=''):
+def plot_hexes(
+    df, geography, plot_col, palette="magma_r", zmax=None, highlight=None, title=""
+):
     G = GEOGRAPHY[geography]
     hexes = get_hexes(G)
     df = pd.merge(hexes, df, how="left", on=G.code_col)
@@ -79,22 +81,25 @@ def plot_hexes(df, geography, plot_col, palette="magma_r", zmax=None, highlight=
 
     for sub_df, legend in zip([df_valid, df_null], [True, False]):
         if legend:
-            marker=dict(
+            marker = dict(
                 colorscale=sns.color_palette(palette).as_hex(),
                 colorbar=dict(
                     title=title,
-                    thicknessmode="fraction", thickness=0.03,
-                    lenmode="fraction", len=0.4,
-                    yanchor="bottom", y=0,
-                    x=0, 
-                    bordercolor='#ff0000',
+                    thicknessmode="fraction",
+                    thickness=0.03,
+                    lenmode="fraction",
+                    len=0.4,
+                    yanchor="bottom",
+                    y=0,
+                    x=0,
+                    bordercolor="#ff0000",
                     nticks=5,
                     tick0=0,
                     tickformat=",.2r",
                 ),
             )
         else:
-            marker=dict()
+            marker = dict()
 
         fig.add_trace(
             go.Scatter(
@@ -111,7 +116,7 @@ def plot_hexes(df, geography, plot_col, palette="magma_r", zmax=None, highlight=
                 name="",
             )
         )
-    
+
     if highlight is not None:
         dfh = df[df[G.code_col].isin(highlight.values)]
         fig.add_trace(
@@ -119,16 +124,16 @@ def plot_hexes(df, geography, plot_col, palette="magma_r", zmax=None, highlight=
                 x=dfh["grid_x"],
                 y=dfh["grid_y"],
                 mode="markers",
-                hoverinfo='skip',
+                hoverinfo="skip",
                 marker=dict(
                     symbol="hexagon",
                     size=12,
-                    color='rgba(0,0,0,0)',
+                    color="rgba(0,0,0,0)",
                     line=dict(
                         color=CONTRAST,
                         width=1.5,
-                    )
-                )
+                    ),
+                ),
             )
         )
 
@@ -143,10 +148,10 @@ def plot_hexes(df, geography, plot_col, palette="magma_r", zmax=None, highlight=
         yaxis=dict(visible=False),
     )
     fig.update_layout(
-       autosize=False,
-       width=350 * G.hex_scale,
-       height=350 * G.hex_scale,
-       margin=dict(b=0, t=0, r=0, l=0),
+        autosize=False,
+        width=350 * G.hex_scale,
+        height=350 * G.hex_scale,
+        margin=dict(b=0, t=0, r=0, l=0),
     )
 
     return fig

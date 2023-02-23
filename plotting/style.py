@@ -22,7 +22,7 @@ CONTRAST = "#2A52BE"
 npc_logo = "https://npproduction.wpenginepowered.com/wp-content/themes/npc/img/logos/npc-logo.svg"
 
 
-def npc_style(fig, logo_pos='right'):
+def npc_style(fig, logo_pos="right"):
     fig.update_layout(
         font_family="Arial",
         font_size=15,
@@ -36,12 +36,12 @@ def npc_style(fig, logo_pos='right'):
     fig.update_yaxes(**axis_args)
     fig.update_xaxes(**axis_args)
 
-    if logo_pos == 'right':
+    if logo_pos == "right":
         x = 0.95
-        xanchor = 'right'
-    elif logo_pos == 'left':
+        xanchor = "right"
+    elif logo_pos == "left":
         x = 0.05
-        xanchor = 'left'
+        xanchor = "left"
     fig.add_layout_image(
         dict(
             source=npc_logo,
