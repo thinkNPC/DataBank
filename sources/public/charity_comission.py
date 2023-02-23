@@ -18,12 +18,27 @@ from sources.public.levellingup import LVL_BY_UTLA
 from utils import CACHE, DATA_DIR
 
 CC_ENDPOINT = "https://ccewuksprdoneregsadata1.blob.core.windows.net/data/json/publicextract.charity.zip"
+CC_COLS = ['date_of_extract', 'organisation_number', 'registered_charity_number',
+       'linked_charity_number', 'charity_name', 'charity_type',
+       'charity_registration_status', 'date_of_registration',
+       'date_of_removal', 'charity_reporting_status',
+       'latest_acc_fin_period_start_date', 'latest_acc_fin_period_end_date',
+       'latest_income', 'latest_expenditure', 'charity_contact_address1',
+       'charity_contact_address2', 'charity_contact_address3',
+       'charity_contact_address4', 'charity_contact_address5',
+       'charity_contact_postcode', 'charity_contact_phone',
+       'charity_contact_email', 'charity_contact_web',
+       'charity_company_registration_number', 'charity_insolvent',
+       'charity_in_administration', 'charity_previously_excepted',
+       'charity_is_cdf_or_cif', 'charity_is_cio', 'cio_is_dissolved',
+       'date_cio_dissolution_notice', 'charity_activities', 'charity_gift_aid',
+       'charity_has_land']
+
 CC_AREA_EP = "https://ccewuksprdoneregsadata1.blob.core.windows.net/data/json/publicextract.charity_area_of_operation.zip"
 
 APPROX_MONTH = pd.Timedelta("31 days")
 
 
-@CACHE.memoize()
 def get_charity_commission_dataset(endpoint, fname):
     r = requests.get(endpoint)
     with zipfile.ZipFile(io.BytesIO(r.content)) as z:
@@ -37,19 +52,31 @@ def get_charity_commission_dataset(endpoint, fname):
     date = pd.to_datetime(date)
     return DataDate(df, DateMeta(publish_date=date))
 
+@CACHE.memoize()
 def get_cc_main():
     datadate = get_charity_commission_dataset(
         CC_ENDPOINT, 'publicextract.charity.json'
     )
+    datadate.df = datadate.df[['organisation_number', 'registered_charity_number',
+       'linked_charity_number', 'charity_name',
+       'charity_registration_status',
+       'charity_reporting_status',
+       'latest_income', 'latest_expenditure',
+       'charity_insolvent',
+       'charity_in_administration']]
     return datadate
 
+@CACHE.memoize()
 def get_cc_area():
     datadate = get_charity_commission_dataset(
         CC_AREA_EP, "publicextract.charity_area_of_operation.json"
     )
+    datadate.df = datadate.df[['organisation_number', 'registered_charity_number',
+       'linked_charity_number', 'geographic_area_type',
+       'geographic_area_description']]
     return datadate
 
-
+@CACHE.memoize()
 def filter_active_charities(data):
     df = data['cc']
 
@@ -75,6 +102,10 @@ def filter_active_charities(data):
         col = 'charity_activities'
         fig = df[col].hist(log=True, alpha=0.5, bins=20)
         plt.savefig('temp-post.png')
+
+    df = df[['organisation_number', 'registered_charity_number',
+       'linked_charity_number', 'charity_name',
+       'latest_income', 'latest_expenditure']]
     return df
 
 CC_MAIN = DataSource(
@@ -125,18 +156,19 @@ def clean_utla_names(s):
         .strip()
     )
 
-
 def charities_by_la(data):
     cc = data['CC']
     area = data["CC_Area"]
     lkp = data["ltla_utla"]
     
     # merge so that only active charities are kept
-    drop_cols = ['date_of_extract', 'linked_charity_number']
+    drop_cols = ['linked_charity_number']
+    org_id_cols = ['organisation_number', 'registered_charity_number']
+    split_cols = ['latest_expenditure', 'latest_income']
     df = area.drop(
         columns=drop_cols,
     ).merge(
-        cc, 
+        cc[org_id_cols + split_cols], 
         on=['organisation_number', 'registered_charity_number'],
         how='inner',
     )
@@ -150,8 +182,6 @@ def charities_by_la(data):
     )
 
     # split expenditure over las mentioned per charity
-    df = df[['organisation_number', 'latest_expenditure',
-       'utla_name']]
     split_las = df['organisation_number'].value_counts()
     split_las = pd.DataFrame(split_las).reset_index()
     split_las = split_las.rename(columns={
@@ -159,13 +189,14 @@ def charities_by_la(data):
         'organisation_number': 'split',
     })
     df = df.merge(split_las, how='left')
-    df['split_expenditure'] = df['latest_expenditure'].divide(df['split'])
+    df[split_cols] = df[split_cols].divide(df['split'], axis=0)
 
     # Charity commission do not use standard area codes, so clean them up
     df["utla_clean"] = df["utla_name"].apply(clean_utla_names)
     lkp["utla_clean"] = lkp["utla_name"].apply(clean_utla_names)
     df = df.merge(
-        lkp, on="utla_clean", how='outer', suffixes=("_cc", "_ons")
+        lkp[['utla_code', 'utla_name', 'utla_clean']],
+        on="utla_clean", how='outer', suffixes=("_cc", "_ons")
     )
 
     # fill unmatched ons utla names with CC names, they don't have utla_codes
@@ -175,7 +206,8 @@ def charities_by_la(data):
     logging.warning(
         f"No matches for {[name for name in df.loc[no_match, 'utla_name_cc'].unique()]}"
     )
-    return df
+
+    return df.drop(columns=['split', 'utla_clean', 'utla_name_cc', 'geographic_area_type'])
 
 
 CC_AREA_ACTIVE = DataAsset(
@@ -189,16 +221,16 @@ CC_AREA_ACTIVE = DataAsset(
 
 def n_charities_by_la(data):
     df = data['cc']
-    df = df[['utla_code', 'utla_name', 'organisation_number', 'split_expenditure']]
+    df = df[['utla_code', 'utla_name', 'organisation_number', 'latest_expenditure']]
     df = (
         df.groupby(['utla_code', "utla_name"])
         .agg({
             'organisation_number': 'count',
-            'split_expenditure': 'sum'
+            'latest_expenditure': 'sum'
         })
         .rename(columns={
             'organisation_number': 'count',
-            'split_expenditure': 'total_spent',
+            'latest_expenditure': 'total_spent',
         })
         .sort_values("total_spent", ascending=False)
         .reset_index()
@@ -290,14 +322,21 @@ def charity_spend_by_lvlup_strip(data):
     import plotly.express as px
     pal =sns.color_palette('magma_r').as_hex()
     pal = [pal[1], pal[3], pal[5]]
-    df['Category'] = df['Category'].round(0)
+    df = df.sort_values('Category').dropna(subset=['Category', 'spent_per_head'])
+    df['Category'] = df['Category'].round(0).astype(int)
+    df['spent_per_head'] = df['spent_per_head'].round(0).astype(int)
 
     fig = px.strip(df, x='Category', y='spent_per_head', 
                    color='Category',
                    hover_data=['utla_name'],
                    log_y=True,
                    color_discrete_sequence=pal)
-    style.npc_style(fig)
+    fig.update_layout(
+        xaxis=dict(title='Levelling up priority'),
+        yaxis=dict(title='Spent per head (£)'),
+        showlegend=False
+    )
+    style.npc_style(fig, logo_pos='left')
     
     return fig
 
@@ -327,7 +366,7 @@ def charity_spend_by_lvlup_hex(data):
 
 
 CharityDensityHex = DataAsset(
-    name="Charities per head in each local authority hexmap",
+    name="Charities per 1000 people in each local authority hexmap",
     inputs={
         "n_charities": NCharitiesUTLAPerHead,
     },
@@ -359,5 +398,3 @@ CharitySpendLvlupHex = DataAsset(
     },
     processer=charity_spend_by_lvlup_hex,
 )
-
-#SightCharitiesNW = 

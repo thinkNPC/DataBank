@@ -31,7 +31,7 @@ def group_lvlup_to_utla(data):
         data['lkp'][['la_code', 'utla_name', 'utla_code']],
         how='outer',
     )
-    df = df.groupby(['utla_code', 'utla_name']).mean()
+    df = df.groupby(['utla_code', 'utla_name']).mean(numeric_only=True)
     df = df.sort_values('Category')
     return df.reset_index()
 

@@ -221,12 +221,19 @@ class Output:
         path = self.to_file()
         # point to output file as report will be there too
         # TODO group files needed for report into a dir
-        path = os.path.normpath(path).split(os.sep)
-        path = os.path.join(*path[1:])
-        assert path.endswith("png"), ('Not a valid markdown asset', self.asset)
+        splitpath = os.path.normpath(path).split(os.sep)
+        if path.endswith("html"):
+            with open(path) as f:
+                content = f.read()
+        elif path.endswith('png'):
+            subpath = os.path.join(*splitpath[1:])
+            content = f"![{self.asset.name}]({subpath})"
+        else:
+            assert RuntimeError('Not a valid markdown asset', self.asset)
+
         lines = [
             f"## {self.asset.name}",
-            f"![{self.asset.name}]({path})",
+            content,
             self.asset.description,
             f"Source: {self.asset.date_updated_str}",
         ]
@@ -259,7 +266,7 @@ class Output:
         df.to_csv(path)
 
     def plotly_html(self, fig, path):
-        fig.write_html(path)
+        fig.write_html(path, full_html=False, include_plotlyjs='cdn')
 
     def plotly_png(self, fig, path):
         fig.write_image(path, scale=3)

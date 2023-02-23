@@ -26,6 +26,4 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         asset = ASSETS_DICT[sys.argv[1]]
         print(asset.name)
-        print(asset.get_data())
         Output(asset).to_file()
-        print(asset.date_updated_str)
