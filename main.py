@@ -21,13 +21,15 @@ def run_all():
         logging.info(asset)
         logging.info(df.iloc[0].head())
 
+
 def all_sources():
     for source in assets.all_sources():
         print(source)
 
+
 def sources_up_to_date():
     for source in assets.all_sources():
-        #source.get_data()
+        source.get_data()
         print(source.date_info)
 
     
