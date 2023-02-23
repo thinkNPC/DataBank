@@ -43,6 +43,7 @@ ASSETS = (
 
 ASSETS_DICT = {asset.name: asset for asset in ASSETS}
 
+
 def all_sources():
     all_sources = []
     for key, asset in ASSETS_DICT.items():

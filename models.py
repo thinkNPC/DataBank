@@ -106,6 +106,7 @@ class DataDate:
     df: pd.DataFrame
     dateMeta: DateMeta
 
+
 @dataclass
 class DataSource:
     name: str
@@ -198,7 +199,7 @@ class DataAsset:
         return " ".join(dates)
 
     def __repr__(self):
-        return f"DataAsset({self.name}, sources: {[source.name for source in self.sources]})"
+        return f"DataAsset({self.name})"
 
 
 @dataclass
@@ -216,6 +217,9 @@ class Report:
 class Output:
     def __init__(self, asset):
         self.asset = asset
+
+    def __repr__(self):
+        return f"Output({self.asset.name})"
 
     def to_md_str(self):
         path = self.to_file()
@@ -259,7 +263,7 @@ class Output:
         path = os.path.join(OUTPUT_DIR, f"{fname}.{suffix}")
         os.makedirs(OUTPUT_DIR, exist_ok=True)
         writer(output, path)
-        print(f"{self.asset.name} written to {path}")
+        print(f"Output: {path}")
         return path
 
     def csv(self, df, path):

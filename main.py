@@ -1,25 +1,33 @@
 import importlib
 import logging
 import sys
+import traceback
 
 import assets
-from combine import DataBank
 import models
+from combine import DataBank
 
 logging.basicConfig(level=logging.INFO)
 
 
-def run_databank():
-    logging.info(DataBank)
-    Output(DataBank).csv()
+def run_asset(key):
+    asset = assets.ASSETS_DICT[key]
+
+    print("=" * 16)
+    print(asset)
+    try:
+        models.Output(asset).to_file()
+    except Exception:
+        print(traceback.format_exc())
+        print("Falure")
+    else:
+        print("Success")
+    print("=" * 16)
 
 
-def run_all():
-    for asset in DATA_BANK_INPUTS:
-        print(asset)
-        df = asset.get_data()
-        logging.info(asset)
-        logging.info(df.iloc[0].head())
+def run_all_assets():
+    for asset in assets.ASSETS_DICT:
+        run_asset(asset)
 
 
 def all_sources():
@@ -32,15 +40,19 @@ def sources_up_to_date():
         source.get_data()
         print(source.date_info)
 
-    
+
 if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        key = sys.argv[1]
-        if key == 'sources':
+    match sys.argv:
+        case [main]:
+            # some default behaviour
+            run_asset("Charities spend by levelling up area hexmap")
+        case [main, "source"]:
             all_sources()
-        elif key == 'sources_up_to_date':
+        case [main, "source", "date"]:
             sources_up_to_date()
-        else:
-            asset = assets.ASSETS_DICT[key]
-            print(asset.name)
-            models.Output(asset).to_file()
+        case [main, "asset", "all"]:
+            run_all_assets()
+        case [main, "asset", *names]:
+            print(names)
+            for name in names:
+                run_asset(name)
