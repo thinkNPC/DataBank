@@ -24,6 +24,7 @@ ASSETS = (
     census.POP_LA,
     charity_comission.CC_MAIN,
     charity_comission.CC_AREA,
+    charity_comission.CC_CATEGORY,
     charity_comission.CC_ACTIVE,
     charity_comission.CC_AREA_ACTIVE,
     charity_comission.N_CHARITIES_UTLA,

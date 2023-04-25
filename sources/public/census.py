@@ -15,8 +15,8 @@ AGE_SEX_LA_ID = "TS009"
 TEN_YEARS = pd.Timedelta(10 * 365, unit="days")
 
 CENSUS_LA_COL_MAP = {
-    "Lower Tier Local Authorities Code": "la_code",
-    "Lower Tier Local Authorities": "la_name",
+    "Lower tier local authorities Code": "la_code",
+    "Lower tier local authorities": "la_name",
 }
 
 
@@ -55,6 +55,8 @@ def get_census_age_sex():
 def group_populations(data):
     df = data["age_sex_census"]
     la_cols = list(CENSUS_LA_COL_MAP.values())
+    print(df)
+    print(df.columns)
     df = df[la_cols + ["population"]]
     df = df.groupby(la_cols).sum().reset_index()
     return df

@@ -56,6 +56,7 @@ CC_COLS = [
 ]
 
 CC_AREA_EP = "https://ccewuksprdoneregsadata1.blob.core.windows.net/data/json/publicextract.charity_area_of_operation.zip"
+CC_CATEGORY_EP = "https://ccewuksprdoneregsadata1.blob.core.windows.net/data/json/publicextract.charity_classification.zip"
 
 APPROX_MONTH = pd.Timedelta("31 days")
 
@@ -83,6 +84,7 @@ def get_cc_main():
             "registered_charity_number",
             "linked_charity_number",
             "charity_name",
+            "charity_type",
             "charity_registration_status",
             "charity_reporting_status",
             "latest_income",
@@ -110,11 +112,25 @@ def get_cc_area():
     ]
     return datadate
 
+#@CACHE.memoize()
+def get_cc_category():
+    datadate = get_charity_commission_dataset(
+        CC_CATEGORY_EP, "publicextract.charity_classification.json"
+    )
+    return datadate
 
 @CACHE.memoize()
 def filter_active_charities(data):
     df = data["cc"]
-
+    # cat = data["cc_cat"]
+    # print(df.columns)
+    # print(df['charity_type'].value_counts())
+    # print(df[df['charity_name'].str.lower().str.contains('marlborough')]['charity_name'])
+    # m = pd.merge(df, cat, on='organisation_number')
+    # print(m)
+    # marl = m[m['charity_name'].str.contains('Marlborough')]
+    # print(marl[['charity_name', 'classification_type', 'classification_description']])
+    # assert False
     # date_of_registration, ~30000 in last five years
     # acc fin period - not needed as report status covers this
     # ~10% of active charities have income/expenditure of 0
@@ -164,11 +180,6 @@ CC_MAIN = DataSource(
     """,
 )
 
-CC_ACTIVE = DataAsset(
-    name="Estimated active charities",
-    inputs={"cc": CC_MAIN},
-    processer=filter_active_charities,
-)
 
 CC_AREA = DataSource(
     name="Charity area of operation",
@@ -184,6 +195,22 @@ CC_AREA = DataSource(
     """,
 )
 
+CC_CATEGORY = DataSource(
+    name="Charity categories",
+    data_getter=get_cc_category,
+    org=Organisations.charity_commission,
+    source_type=SourceType.webscrape,
+    url="https://register-of-charities.charitycommission.gov.uk/register/full-register-download",
+    dateMeta=DateMeta(update_freq=APPROX_MONTH),
+    description="""
+    """,
+)
+
+CC_ACTIVE = DataAsset(
+    name="Estimated active charities",
+    inputs={"cc": CC_MAIN, "cc_cat": CC_CATEGORY},
+    processer=filter_active_charities,
+)
 
 def clean_utla_names(s):
     return (
@@ -395,7 +422,12 @@ def charity_spend_by_lvlup_hex(data):
         how="outer",
         on="utla_code",
     )
-
+    df['category_rounded'] = df['Category'].round()
+    m = df.groupby('category_rounded').mean()
+    m = m[['count', 'count_per_1000', 'spent_per_head']]
+    m.to_csv('charity_per_head_and_spend_averages.csv')
+    df.to_csv('charity_per_head_and_spend_lvl_up_area.csv')
+    
     lvl1 = df.loc[df["Category"] == 1, "utla_code"]
     fig = hex.plot_hexes(
         df,
