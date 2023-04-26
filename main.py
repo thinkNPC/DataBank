@@ -16,7 +16,7 @@ def run_asset(key):
     print("=" * 16)
     print(asset)
     try:
-        models.Output(asset).to_file()
+        models.Output(asset).to_file(print_frame=True)
     except Exception:
         print(traceback.format_exc())
         print("Falure")

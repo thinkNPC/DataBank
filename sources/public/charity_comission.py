@@ -57,6 +57,8 @@ CC_COLS = [
 
 CC_AREA_EP = "https://ccewuksprdoneregsadata1.blob.core.windows.net/data/json/publicextract.charity_area_of_operation.zip"
 CC_CATEGORY_EP = "https://ccewuksprdoneregsadata1.blob.core.windows.net/data/json/publicextract.charity_classification.zip"
+CC_HISTORY_EP = "https://ccewuksprdoneregsadata1.blob.core.windows.net/data/json/publicextract.charity_annual_return_history.zip"
+
 
 APPROX_MONTH = pd.Timedelta("31 days")
 
@@ -112,25 +114,42 @@ def get_cc_area():
     ]
     return datadate
 
-#@CACHE.memoize()
+@CACHE.memoize()
 def get_cc_category():
     datadate = get_charity_commission_dataset(
         CC_CATEGORY_EP, "publicextract.charity_classification.json"
     )
     return datadate
 
+def get_cc_history():
+    datadate = get_charity_commission_dataset(
+        CC_HISTORY_EP, "publicextract.charity_annual_return_history.json"
+    )
+    datadate.df = datadate.df[[
+        'date_of_extract', 'organisation_number',
+        'ar_cycle_reference',
+        'total_gross_income',
+        'total_gross_expenditure',
+    ]]
+    df = datadate.df
+    return datadate
+
+@CACHE.memoize()
+def get_grantmaking():
+    datadate = get_charity_commission_dataset(
+        "https://ccewuksprdoneregsadata1.blob.core.windows.net/data/json/publicextract.charity_annual_return_parta.zip", 
+        "publicextract.charity_annual_return_parta.json"
+    )
+    df = datadate.df
+    grantmakers = df[df['grant_making_is_main_activity'] == True]
+    grantmakers = df[['organisation_number']].drop_duplicates()
+    datadate.df = grantmakers
+    return datadate
+
 @CACHE.memoize()
 def filter_active_charities(data):
     df = data["cc"]
-    # cat = data["cc_cat"]
-    # print(df.columns)
-    # print(df['charity_type'].value_counts())
-    # print(df[df['charity_name'].str.lower().str.contains('marlborough')]['charity_name'])
-    # m = pd.merge(df, cat, on='organisation_number')
-    # print(m)
-    # marl = m[m['charity_name'].str.contains('Marlborough')]
-    # print(marl[['charity_name', 'classification_type', 'classification_description']])
-    # assert False
+
     # date_of_registration, ~30000 in last five years
     # acc fin period - not needed as report status covers this
     # ~10% of active charities have income/expenditure of 0
@@ -206,11 +225,40 @@ CC_CATEGORY = DataSource(
     """,
 )
 
+CC_HISTORY = DataSource(
+    name="Charity annual return history",
+    data_getter=get_cc_history,
+    org=Organisations.charity_commission,
+    source_type=SourceType.webscrape,
+    url="https://register-of-charities.charitycommission.gov.uk/register/full-register-download",
+    dateMeta=DateMeta(update_freq=APPROX_MONTH),
+    description="""
+    """,
+)
+
+CC_GRANTMAKER = DataSource(
+    name="Charity org number grantmaking flag",
+    data_getter=get_grantmaking,
+    org=Organisations.charity_commission,
+    source_type=SourceType.webscrape,
+    url="https://register-of-charities.charitycommission.gov.uk/register/full-register-download",
+    dateMeta=DateMeta(update_freq=APPROX_MONTH),
+    description="""
+    """,
+)
+
+def remove_grantmakers(df):
+    print('removing grant makers')
+    return df[df['organisation_number'].isin(CC_GRANTMAKER.get_data()['organisation_number'])]
+
+
 CC_ACTIVE = DataAsset(
     name="Estimated active charities",
     inputs={"cc": CC_MAIN, "cc_cat": CC_CATEGORY},
     processer=filter_active_charities,
 )
+
+
 
 def clean_utla_names(s):
     return (
@@ -233,6 +281,7 @@ def charities_by_la(data):
     lkp = data["ltla_utla"]
 
     # merge so that only active charities are kept
+    cc = remove_grantmakers(cc)
     drop_cols = ["linked_charity_number"]
     org_id_cols = ["organisation_number", "registered_charity_number"]
     split_cols = ["latest_expenditure", "latest_income"]
@@ -241,6 +290,7 @@ def charities_by_la(data):
         on=["organisation_number", "registered_charity_number"],
         how="inner",
     )
+
 
     # only interested in charities with a LA documented
     df = df[df["geographic_area_type"] == "Local Authority"]
@@ -260,17 +310,19 @@ def charities_by_la(data):
         }
     )
     df = df.merge(split_las, how="left")
+
     df[split_cols] = df[split_cols].divide(df["split"], axis=0)
 
     # Charity commission do not use standard area codes, so clean them up
     df["utla_clean"] = df["utla_name"].apply(clean_utla_names)
     lkp["utla_clean"] = lkp["utla_name"].apply(clean_utla_names)
     df = df.merge(
-        lkp[["utla_code", "utla_name", "utla_clean"]],
+        lkp[["utla_code", "utla_name", "utla_clean"]].drop_duplicates(),
         on="utla_clean",
         how="outer",
         suffixes=("_cc", "_ons"),
     )
+
 
     # fill unmatched ons utla names with CC names, they don't have utla_codes
     df = df.rename(columns={"utla_name_ons": "utla_name"})
@@ -281,13 +333,13 @@ def charities_by_la(data):
     )
 
     return df.drop(
-        columns=["split", "utla_clean", "utla_name_cc", "geographic_area_type"]
+        columns=["utla_clean", "utla_name_cc", "geographic_area_type"]
     )
 
 
-CC_AREA_ACTIVE = DataAsset(
-    name="Active charities by area",
-    inputs={"CC": CC_ACTIVE, "CC_Area": CC_AREA, "ltla_utla": LTLA_UTLA},
+CC_BY_AREA = DataAsset(
+    name="Charities by area",
+    inputs={"CC": CC_MAIN, "CC_Area": CC_AREA, "ltla_utla": LTLA_UTLA},
     processer=charities_by_la,
     description=("Where charity has UTLA or region info."),
 )
@@ -344,7 +396,7 @@ def normalise_charities_utla(data):
 
 N_CHARITIES_UTLA = DataAsset(
     name="Number of active charities operational by UTLA",
-    inputs={"cc": CC_AREA_ACTIVE},
+    inputs={"cc": CC_BY_AREA},
     processer=n_charities_by_la,
     description=("Only ~60\% of charities have a UTLA defined to them."),
 )
@@ -395,7 +447,10 @@ def charity_spend_by_lvlup_strip(data):
     df = df.sort_values("Category").dropna(subset=["Category", "spent_per_head"])
     df["Category"] = df["Category"].round(0).astype(int)
     df["spent_per_head"] = df["spent_per_head"].round(0).astype(int)
-
+    print(df)
+    cat = df.groupby('Category').sum()
+    print(cat['total_spent'].divide(cat['population'], axis=0))
+    print(cat)
     fig = px.strip(
         df,
         x="Category",
@@ -477,3 +532,112 @@ CharitySpendLvlupHex = DataAsset(
     },
     processer=charity_spend_by_lvlup_hex,
 )
+
+
+def combine_cc_history(data):
+    area = data['cc_area']
+    df = data['cc_history']
+
+    #area = area[['organisation_number', 'split', 'utla_name']]
+    df = df[['organisation_number', 'ar_cycle_reference', 'total_gross_expenditure']] 
+    df = df.merge(area).sort_values(['split', 'organisation_number'])
+    df['total_gross_expenditure'] = df['total_gross_expenditure'].divide(df['split'], axis=0)
+    df['year'] = 2000 + pd.to_numeric(df['ar_cycle_reference'].str[2:])
+    df = df.drop(columns=['split', 'latest_expenditure', 'latest_income', 'ar_cycle_reference'])
+
+    return df
+
+
+CC_HISTORY_AREA = DataAsset(
+    name="combine account history and area",
+    inputs={"cc_history": CC_HISTORY, "cc_area": CC_BY_AREA},
+    processer=combine_cc_history,
+)
+
+def level_up_spend_history(data):
+    pop = data["ltla_pop"]
+    lkp = data["ltla_utla"]
+    utla_pop = (
+        pd.merge(pop, lkp[["la_code", "utla_code", "utla_name"]], on="la_code")
+        .groupby(
+            ["utla_code", "utla_name"],
+        )
+        .sum(numeric_only=True)
+        .reset_index()
+    )
+    lvlup = data['lvlup_areas']
+    lvlup['Category'] = lvlup['Category'].round()
+    lvlup_pops = utla_pop.merge(lvlup).groupby('Category').sum()
+    print(lvlup_pops)
+    df = (
+            data['cc'][['utla_code', 'year', 'total_gross_expenditure']]
+            .groupby(['utla_code', 'year'])
+            .sum()
+            .reset_index()
+    )
+    df = df.merge(data['lvlup_areas'])
+    df['Category'] = df['Category'].round()
+    df = df.groupby(['Category', 'year']).sum().reset_index()
+    df = df.pivot(index='year', columns='Category', values='total_gross_expenditure')
+    print(df)
+    print(lvlup_pops.T)
+    for col in df.columns:
+        df[col] = df[col] / lvlup_pops.loc[col, 'population']
+    print(df)
+    return df
+
+LVL_UP_AREA_HISTORY = DataAsset(
+    name="Expenditure by levelling up area over time",
+    inputs={
+        'cc': CC_HISTORY_AREA, 
+        "lvlup_areas": LVL_BY_UTLA,
+        "ltla_pop": POP_LA,
+        "ltla_utla": LTLA_UTLA,
+    },
+    processer=level_up_spend_history,
+)
+
+def level_up_spend_history_chart(data):
+    import plotly.express as px
+
+    pal = sns.color_palette("magma_r").as_hex()
+    pal = [pal[1], pal[3], pal[5]]
+
+    df = data['df'].reset_index()
+    df = df[df['year'] >= 2018]
+    df = df[df['year'] <= df['year'].max()-1]
+
+    keys = {
+        1: "1 - places deemed in most need of investment",
+        2: '2',
+        3: '3',
+    }
+    df = df.rename(columns=keys)
+    fig = px.line(
+        df,
+        x="year",
+        y=list(keys.values()),
+        color_discrete_sequence=pal,
+        markers=True,
+    )
+    fig.update_layout(
+        xaxis=dict(title="Year"),
+        yaxis=dict(
+            title="Charity spend per head (£)",
+            range=[0, df[list(keys.values())].max().max()*1.05],
+        ),
+        legend=dict(
+            title="Levelling up priority",
+            traceorder='reversed',
+        ),
+    )
+    style.npc_style(fig, logo_pos="bottom")
+
+    return fig
+
+LVL_UP_AREA_HISTORY_CHART = DataAsset(
+    name="Chart of expenditure by levelling up area over time",
+    inputs={'df': LVL_UP_AREA_HISTORY},
+    processer=level_up_spend_history_chart,
+)
+

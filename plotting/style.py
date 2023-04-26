@@ -39,9 +39,18 @@ def npc_style(fig, logo_pos="right"):
     if logo_pos == "right":
         x = 0.95
         xanchor = "right"
+        y = 0.95
+        yanchor= "top"
     elif logo_pos == "left":
         x = 0.05
         xanchor = "left"
+        y = 0.95
+        yanchor= "top"
+    elif logo_pos == 'bottom':
+        x = 0.95
+        xanchor = "right"
+        y = 0.05
+        yanchor="bottom"
     fig.add_layout_image(
         dict(
             source=npc_logo,
@@ -49,8 +58,8 @@ def npc_style(fig, logo_pos="right"):
             sizey=0.2,
             xref="paper",
             yref="paper",
-            y=0.95,
-            yanchor="top",
+            y=y,
+            yanchor=yanchor,
             x=x,
             xanchor=xanchor,
         )

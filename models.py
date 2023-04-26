@@ -243,10 +243,12 @@ class Output:
         ]
         return "\n\n".join(lines)
 
-    def to_file(self):
+    def to_file(self, print_frame=False):
         output = self.asset.get_data()
         fname = slugify.slugify(self.asset.name)
         if isinstance(output, pd.DataFrame):
+            if print_frame:
+                print(output)
             path = self.write(output, fname, "csv", self.csv)
         elif isinstance(output, plotly.graph_objects.Figure):
             path = self.write(output, fname, "html", self.plotly_html)
