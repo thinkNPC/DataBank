@@ -9,8 +9,7 @@ import pandas as pd
 import requests
 import seaborn as sns
 
-from models import (DataAsset, DataDate, DataSource, DateMeta, Organisations,
-                    SourceType)
+from models import DataAsset, DataDate, DataSource, DateMeta, Organisations, SourceType
 from plotting import hex, style
 from sources.public.census import POP_LA
 from sources.public.geoportal import LTLA_UTLA
@@ -114,6 +113,7 @@ def get_cc_area():
     ]
     return datadate
 
+
 @CACHE.memoize()
 def get_cc_category():
     datadate = get_charity_commission_dataset(
@@ -121,30 +121,36 @@ def get_cc_category():
     )
     return datadate
 
+
 def get_cc_history():
     datadate = get_charity_commission_dataset(
         CC_HISTORY_EP, "publicextract.charity_annual_return_history.json"
     )
-    datadate.df = datadate.df[[
-        'date_of_extract', 'organisation_number',
-        'ar_cycle_reference',
-        'total_gross_income',
-        'total_gross_expenditure',
-    ]]
+    datadate.df = datadate.df[
+        [
+            "date_of_extract",
+            "organisation_number",
+            "ar_cycle_reference",
+            "total_gross_income",
+            "total_gross_expenditure",
+        ]
+    ]
     df = datadate.df
     return datadate
+
 
 @CACHE.memoize()
 def get_grantmaking():
     datadate = get_charity_commission_dataset(
-        "https://ccewuksprdoneregsadata1.blob.core.windows.net/data/json/publicextract.charity_annual_return_parta.zip", 
-        "publicextract.charity_annual_return_parta.json"
+        "https://ccewuksprdoneregsadata1.blob.core.windows.net/data/json/publicextract.charity_annual_return_parta.zip",
+        "publicextract.charity_annual_return_parta.json",
     )
     df = datadate.df
-    grantmakers = df[df['grant_making_is_main_activity'] == True]
-    grantmakers = df[['organisation_number']].drop_duplicates()
+    grantmakers = df[df["grant_making_is_main_activity"] == True]
+    grantmakers = df[["organisation_number"]].drop_duplicates()
     datadate.df = grantmakers
     return datadate
+
 
 @CACHE.memoize()
 def filter_active_charities(data):
@@ -247,9 +253,12 @@ CC_GRANTMAKER = DataSource(
     """,
 )
 
+
 def remove_grantmakers(df):
-    print('removing grant makers')
-    return df[df['organisation_number'].isin(CC_GRANTMAKER.get_data()['organisation_number'])]
+    print("removing grant makers")
+    return df[
+        df["organisation_number"].isin(CC_GRANTMAKER.get_data()["organisation_number"])
+    ]
 
 
 CC_ACTIVE = DataAsset(
@@ -257,7 +266,6 @@ CC_ACTIVE = DataAsset(
     inputs={"cc": CC_MAIN, "cc_cat": CC_CATEGORY},
     processer=filter_active_charities,
 )
-
 
 
 def clean_utla_names(s):
@@ -291,7 +299,6 @@ def charities_by_la(data):
         how="inner",
     )
 
-
     # only interested in charities with a LA documented
     df = df[df["geographic_area_type"] == "Local Authority"]
     df = df.rename(
@@ -323,7 +330,6 @@ def charities_by_la(data):
         suffixes=("_cc", "_ons"),
     )
 
-
     # fill unmatched ons utla names with CC names, they don't have utla_codes
     df = df.rename(columns={"utla_name_ons": "utla_name"})
     df["utla_name"] = df["utla_name"].fillna(df["utla_name_cc"])
@@ -332,9 +338,7 @@ def charities_by_la(data):
         f"No matches for {[name for name in df.loc[no_match, 'utla_name_cc'].unique()]}"
     )
 
-    return df.drop(
-        columns=["utla_clean", "utla_name_cc", "geographic_area_type"]
-    )
+    return df.drop(columns=["utla_clean", "utla_name_cc", "geographic_area_type"])
 
 
 CC_BY_AREA = DataAsset(
@@ -448,8 +452,8 @@ def charity_spend_by_lvlup_strip(data):
     df["Category"] = df["Category"].round(0).astype(int)
     df["spent_per_head"] = df["spent_per_head"].round(0).astype(int)
     print(df)
-    cat = df.groupby('Category').sum()
-    print(cat['total_spent'].divide(cat['population'], axis=0))
+    cat = df.groupby("Category").sum()
+    print(cat["total_spent"].divide(cat["population"], axis=0))
     print(cat)
     fig = px.strip(
         df,
@@ -477,12 +481,12 @@ def charity_spend_by_lvlup_hex(data):
         how="outer",
         on="utla_code",
     )
-    df['category_rounded'] = df['Category'].round()
-    m = df.groupby('category_rounded').mean()
-    m = m[['count', 'count_per_1000', 'spent_per_head']]
-    m.to_csv('charity_per_head_and_spend_averages.csv')
-    df.to_csv('charity_per_head_and_spend_lvl_up_area.csv')
-    
+    df["category_rounded"] = df["Category"].round()
+    m = df.groupby("category_rounded").mean()
+    m = m[["count", "count_per_1000", "spent_per_head"]]
+    m.to_csv("charity_per_head_and_spend_averages.csv")
+    df.to_csv("charity_per_head_and_spend_lvl_up_area.csv")
+
     lvl1 = df.loc[df["Category"] == 1, "utla_code"]
     fig = hex.plot_hexes(
         df,
@@ -535,15 +539,19 @@ CharitySpendLvlupHex = DataAsset(
 
 
 def combine_cc_history(data):
-    area = data['cc_area']
-    df = data['cc_history']
+    area = data["cc_area"]
+    df = data["cc_history"]
 
-    #area = area[['organisation_number', 'split', 'utla_name']]
-    df = df[['organisation_number', 'ar_cycle_reference', 'total_gross_expenditure']] 
-    df = df.merge(area).sort_values(['split', 'organisation_number'])
-    df['total_gross_expenditure'] = df['total_gross_expenditure'].divide(df['split'], axis=0)
-    df['year'] = 2000 + pd.to_numeric(df['ar_cycle_reference'].str[2:])
-    df = df.drop(columns=['split', 'latest_expenditure', 'latest_income', 'ar_cycle_reference'])
+    # area = area[['organisation_number', 'split', 'utla_name']]
+    df = df[["organisation_number", "ar_cycle_reference", "total_gross_expenditure"]]
+    df = df.merge(area).sort_values(["split", "organisation_number"])
+    df["total_gross_expenditure"] = df["total_gross_expenditure"].divide(
+        df["split"], axis=0
+    )
+    df["year"] = 2000 + pd.to_numeric(df["ar_cycle_reference"].str[2:])
+    df = df.drop(
+        columns=["split", "latest_expenditure", "latest_income", "ar_cycle_reference"]
+    )
 
     return df
 
@@ -553,6 +561,7 @@ CC_HISTORY_AREA = DataAsset(
     inputs={"cc_history": CC_HISTORY, "cc_area": CC_BY_AREA},
     processer=combine_cc_history,
 )
+
 
 def level_up_spend_history(data):
     pop = data["ltla_pop"]
@@ -565,31 +574,32 @@ def level_up_spend_history(data):
         .sum(numeric_only=True)
         .reset_index()
     )
-    lvlup = data['lvlup_areas']
-    lvlup['Category'] = lvlup['Category'].round()
-    lvlup_pops = utla_pop.merge(lvlup).groupby('Category').sum()
+    lvlup = data["lvlup_areas"]
+    lvlup["Category"] = lvlup["Category"].round()
+    lvlup_pops = utla_pop.merge(lvlup).groupby("Category").sum()
     print(lvlup_pops)
     df = (
-            data['cc'][['utla_code', 'year', 'total_gross_expenditure']]
-            .groupby(['utla_code', 'year'])
-            .sum()
-            .reset_index()
+        data["cc"][["utla_code", "year", "total_gross_expenditure"]]
+        .groupby(["utla_code", "year"])
+        .sum()
+        .reset_index()
     )
-    df = df.merge(data['lvlup_areas'])
-    df['Category'] = df['Category'].round()
-    df = df.groupby(['Category', 'year']).sum().reset_index()
-    df = df.pivot(index='year', columns='Category', values='total_gross_expenditure')
+    df = df.merge(data["lvlup_areas"])
+    df["Category"] = df["Category"].round()
+    df = df.groupby(["Category", "year"]).sum().reset_index()
+    df = df.pivot(index="year", columns="Category", values="total_gross_expenditure")
     print(df)
     print(lvlup_pops.T)
     for col in df.columns:
-        df[col] = df[col] / lvlup_pops.loc[col, 'population']
+        df[col] = df[col] / lvlup_pops.loc[col, "population"]
     print(df)
     return df
+
 
 LVL_UP_AREA_HISTORY = DataAsset(
     name="Expenditure by levelling up area over time",
     inputs={
-        'cc': CC_HISTORY_AREA, 
+        "cc": CC_HISTORY_AREA,
         "lvlup_areas": LVL_BY_UTLA,
         "ltla_pop": POP_LA,
         "ltla_utla": LTLA_UTLA,
@@ -597,20 +607,21 @@ LVL_UP_AREA_HISTORY = DataAsset(
     processer=level_up_spend_history,
 )
 
+
 def level_up_spend_history_chart(data):
     import plotly.express as px
 
     pal = sns.color_palette("magma_r").as_hex()
     pal = [pal[1], pal[3], pal[5]]
 
-    df = data['df'].reset_index()
-    df = df[df['year'] >= 2018]
-    df = df[df['year'] <= df['year'].max()-1]
+    df = data["df"].reset_index()
+    df = df[df["year"] >= 2018]
+    df = df[df["year"] <= df["year"].max() - 1]
 
     keys = {
         1: "1 - places deemed in most need of investment",
-        2: '2',
-        3: '3',
+        2: "2",
+        3: "3",
     }
     df = df.rename(columns=keys)
     fig = px.line(
@@ -624,20 +635,20 @@ def level_up_spend_history_chart(data):
         xaxis=dict(title="Year"),
         yaxis=dict(
             title="Charity spend per head (£)",
-            range=[0, df[list(keys.values())].max().max()*1.05],
+            range=[0, df[list(keys.values())].max().max() * 1.05],
         ),
         legend=dict(
             title="Levelling up priority",
-            traceorder='reversed',
+            traceorder="reversed",
         ),
     )
     style.npc_style(fig, logo_pos="bottom")
 
     return fig
 
+
 LVL_UP_AREA_HISTORY_CHART = DataAsset(
     name="Chart of expenditure by levelling up area over time",
-    inputs={'df': LVL_UP_AREA_HISTORY},
+    inputs={"df": LVL_UP_AREA_HISTORY},
     processer=level_up_spend_history_chart,
 )
-

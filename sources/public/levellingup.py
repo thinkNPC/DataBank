@@ -1,7 +1,6 @@
 import pandas as pd
 
-from models import (DataAsset, DataDate, DataSource, DateMeta, Organisations,
-                    SourceType)
+from models import DataAsset, DataDate, DataSource, DateMeta, Organisations, SourceType
 from plotting import hex
 from sources.public.geoportal import LKP
 from utils import YEAR

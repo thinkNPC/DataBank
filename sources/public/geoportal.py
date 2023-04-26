@@ -6,8 +6,7 @@ import pandas as pd
 import requests
 
 import utils
-from models import (DataAsset, DataDate, DataSource, DateMeta, Organisations,
-                    SourceType)
+from models import DataAsset, DataDate, DataSource, DateMeta, Organisations, SourceType
 
 LTLA_UTLA_FILE = {
     "fname": "Lower_Tier_Local_Authority_to_Upper_Tier_Local_Authority_(December_2022)_Lookup_in_England_and_Wales.csv",

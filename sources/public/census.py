@@ -4,8 +4,7 @@ import os
 import pandas as pd
 import requests
 
-from models import (DataAsset, DataDate, DataSource, DateMeta, Organisations,
-                    SourceType)
+from models import DataAsset, DataDate, DataSource, DateMeta, Organisations, SourceType
 from utils import DATA_DIR
 
 ONS_API_ENDPOINT = "https://api.beta.ons.gov.uk/v1/datasets/{id}"

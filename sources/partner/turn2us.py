@@ -2,8 +2,7 @@ import os
 
 import pandas as pd
 
-from models import (DataAsset, DataDate, DataSource, DateMeta, Organisations,
-                    SourceType)
+from models import DataAsset, DataDate, DataSource, DateMeta, Organisations, SourceType
 from sources.public.census import POP_LA
 from utils import CACHE, DATA_DIR
 

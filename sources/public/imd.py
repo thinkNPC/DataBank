@@ -3,8 +3,7 @@ import os
 import pandas as pd
 
 import utils
-from models import (DataAsset, DataDate, DataSource, DateMeta, Organisations,
-                    SourceType)
+from models import DataAsset, DataDate, DataSource, DateMeta, Organisations, SourceType
 
 IMD_PUBLISH_URL = (
     "https://www.gov.uk/government/statistics/english-indices-of-deprivation-2019"
