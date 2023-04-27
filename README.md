@@ -1,6 +1,6 @@
 # NPC data repository
 
-This is an overngineered repository to bring in data sources, and create assets with functionality for tracking whether an asset and sources are up to date.
+This is an overngineered repository to bring in data sources, and create different assets. With functionality for tracking whether an asset and sources are up to date.
 
 There are three key classes defined in `models.py`:
 
