@@ -93,7 +93,7 @@ def plot_hexes(
                     y=0,
                     x=0,
                     bordercolor="#ff0000",
-                    #nticks=3,
+                    # nticks=3,
                     tick0=0,
                     tickformat=",.0r",
                 ),

@@ -424,7 +424,10 @@ def charity_map(data):
     df = data["n_charities"]
 
     fig = hex.plot_hexes(
-        df, "UTLA", "count_per_1000", zmax=get_n_highest(df, "count_per_1000", 3),
+        df,
+        "UTLA",
+        "count_per_1000",
+        zmax=get_n_highest(df, "count_per_1000", 3),
     )
     return fig
 
@@ -605,32 +608,29 @@ LVL_UP_AREA_HISTORY = DataAsset(
 def level_up_spend_history_chart(data):
     import plotly.express as px
     import plotly.graph_objects as go
+
     pal = sns.color_palette("magma_r").as_hex()
     pal = [pal[5], pal[3], pal[1]]
 
-    df = data['df']
+    df = data["df"]
     cols = df.columns
     df = df.reset_index()
 
     df = df[df["year"] >= 2018]
     df = df[df["year"] <= 2021]
 
-    labels = [
-        '1 (places in most<br>need of investment)',
-        '2',
-        '3'
-    ]
+    labels = ["1 (places in most<br>need of investment)", "2", "3"]
     fig = go.Figure()
     for i, col in enumerate(cols):
         fig.add_trace(
             go.Line(
-                x=df['year'],
+                x=df["year"],
                 y=df[col],
                 marker=dict(
                     color=pal[i],
                 ),
                 name=col,
-                #name=labels[i],
+                # name=labels[i],
             )
         )
 
@@ -639,20 +639,13 @@ def level_up_spend_history_chart(data):
         yaxis=dict(
             title="Charity spend per head",
             range=[0, df[cols].max().max() * 1.05],
-            tickprefix='£'
+            tickprefix="£",
         ),
-        legend=dict(
-            traceorder='reversed',
-            title='Levelling up priority'
-        )
+        legend=dict(traceorder="reversed", title="Levelling up priority"),
     )
 
     ay = [20, -20, 20]
-    labels = [
-        'Priority area 1<br>highest need',
-        'Priority area 2',
-        'Priority area 3'
-    ]
+    labels = ["Priority area 1<br>highest need", "Priority area 2", "Priority area 3"]
     # for i, col in enumerate([1,2,3]):
     #     fig.add_annotation(
     #         x=2018,
@@ -664,15 +657,15 @@ def level_up_spend_history_chart(data):
     #     )
     fig.add_annotation(
         x=2019,
-        y=df.set_index('year').loc[2019, cols[0]],
-        text='Levelling up fund<br>announced in 2019',
-        showarrow=False,    #
+        y=df.set_index("year").loc[2019, cols[0]],
+        text="Levelling up fund<br>announced in 2019",
+        showarrow=False,  #
         yshift=-30,
     )
     fig.add_annotation(
         x=2021,
-        y=df.set_index('year').loc[2021, cols[0]],
-        text='Funding gap to priority<br>levelling up areas<br>has widened, not closed.',
+        y=df.set_index("year").loc[2021, cols[0]],
+        text="Funding gap to priority<br>levelling up areas<br>has widened, not closed.",
         showarrow=False,
         yshift=-30,
         xshift=-30,
@@ -700,7 +693,7 @@ def focus_area_data(data):
         )
         .sum(numeric_only=True)
         .reset_index()
-        .set_index('utla_name')
+        .set_index("utla_name")
     )
     lvlup = data["lvlup_areas"]
     lvlup["Category"] = lvlup["Category"].round()
@@ -712,11 +705,11 @@ def focus_area_data(data):
         .reset_index()
     )
 
-    areas = ['Nottingham', 'Kent', 'Rochdale']
-    df = df[df['utla_name'].isin(areas)]
-    df = df.merge(utla_pop.reset_index(), how='left')
-    df['spend'] = df['total_gross_expenditure'] / df['population']
-    df = df.pivot(index='year', columns='utla_name', values='spend')
+    areas = ["Nottingham", "Kent", "Rochdale"]
+    df = df[df["utla_name"].isin(areas)]
+    df = df.merge(utla_pop.reset_index(), how="left")
+    df["spend"] = df["total_gross_expenditure"] / df["population"]
+    df = df.pivot(index="year", columns="utla_name", values="spend")
     return df
 
 
@@ -737,6 +730,7 @@ CC_3_AREAS_CHART = DataAsset(
     processer=level_up_spend_history_chart,
 )
 
+
 def area_spend_data(data):
     pop = data["ltla_pop"]
     lkp = data["ltla_utla"]
@@ -747,7 +741,7 @@ def area_spend_data(data):
         )
         .sum(numeric_only=True)
         .reset_index()
-        .set_index('utla_name')
+        .set_index("utla_name")
     )
     lvlup = data["lvlup_areas"]
     lvlup["Category"] = lvlup["Category"].round()
@@ -758,10 +752,10 @@ def area_spend_data(data):
         .sum()
         .reset_index()
     )
-    df = df.merge(utla_pop.reset_index(), how='left')
-    df['spend'] = df['total_gross_expenditure'] / df['population']
+    df = df.merge(utla_pop.reset_index(), how="left")
+    df["spend"] = df["total_gross_expenditure"] / df["population"]
 
-    df = df.pivot(index='year', columns='utla_name', values='spend')
+    df = df.pivot(index="year", columns="utla_name", values="spend")
     return df
 
 
