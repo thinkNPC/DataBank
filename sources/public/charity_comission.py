@@ -424,7 +424,7 @@ def charity_map(data):
     df = data["n_charities"]
 
     fig = hex.plot_hexes(
-        df, "UTLA", "count_per_1000", zmax=get_n_highest(df, "count_per_1000", 3)
+        df, "UTLA", "count_per_1000", zmax=get_n_highest(df, "count_per_1000", 3),
     )
     return fig
 
@@ -629,7 +629,8 @@ def level_up_spend_history_chart(data):
                 marker=dict(
                     color=pal[i],
                 ),
-                name=labels[i],
+                name=col,
+                #name=labels[i],
             )
         )
 
@@ -663,14 +664,14 @@ def level_up_spend_history_chart(data):
     #     )
     fig.add_annotation(
         x=2019,
-        y=df.set_index('year').loc[2019, 1],
+        y=df.set_index('year').loc[2019, cols[0]],
         text='Levelling up fund<br>announced in 2019',
         showarrow=False,    #
         yshift=-30,
     )
     fig.add_annotation(
         x=2021,
-        y=df.set_index('year').loc[2021, 1],
+        y=df.set_index('year').loc[2021, cols[0]],
         text='Funding gap to priority<br>levelling up areas<br>has widened, not closed.',
         showarrow=False,
         yshift=-30,

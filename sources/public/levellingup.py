@@ -42,6 +42,9 @@ def levelling_up_utla_map(data):
     df = data["lvlup"]
     df["Category"] = df["Category"].round(0)
     fig = hex.plot_hexes(df, "UTLA", "Category", palette="magma")
+    fig.update_layout(
+        coloraxis_colorbar=dict(dtick=1, tickvals=[1,2,3],),
+    )
     return fig
 
 
