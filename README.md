@@ -29,12 +29,6 @@ Most data sources are pulled from API or webscraped. Data in `./sources/partner/
 
 Expenditure by levelling up areas:
 
-Map:
 ```
-python main.py asset "Charity expenditure per head in each local authority hexmap"
-```
-
-Violin plot:
-```
-python main.py asset "Charities spend by levelling up area violin plot"
+python main.py asset "Charity expenditure per head in each local authority hexmap" "Charities spend by levelling up area violin plot" "Number of charities operational by UTLA per head" "Charities per 1000 people in each local authority hexmap" "Charities spend by levelling up area hexmap" "Expenditure by levelling up area over time" "Chart of expenditure by levelling up area over time" "3 focus areas data" "Area spend by year table"
 ```

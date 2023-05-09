@@ -1,0 +1,11 @@
+pandas<2
+diskcache
+plotly
+python-slugify
+requests
+numpy
+seaborn
+kaleido
+openpyxl
+black
+ruff

@@ -19,6 +19,7 @@ class Organisations(Enum):
     charity_commission = "Charity Commission"
     trussell_trust = "Trussell Trust"
     dluhc = "Department for Levelling Up, Housing and Communities"
+    kanedata = "Kane Data Limited"
     none = None
 
 

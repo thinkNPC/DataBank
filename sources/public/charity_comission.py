@@ -2,7 +2,6 @@ import io
 import json
 import logging
 import zipfile
-from functools import partial
 
 import numpy as np
 import pandas as pd
@@ -13,8 +12,9 @@ from models import DataAsset, DataDate, DataSource, DateMeta, Organisations, Sou
 from plotting import hex, style
 from sources.public.census import POP_LA
 from sources.public.geoportal import LTLA_UTLA
+from sources.public.independent_schools import INDEPENDENT_SCHOOLS
 from sources.public.levellingup import LVL_BY_UTLA
-from utils import CACHE, DATA_DIR
+from utils import CACHE
 
 CC_ENDPOINT = "https://ccewuksprdoneregsadata1.blob.core.windows.net/data/json/publicextract.charity.zip"
 CC_COLS = [
@@ -135,7 +135,6 @@ def get_cc_history():
             "total_gross_expenditure",
         ]
     ]
-    df = datadate.df
     return datadate
 
 
@@ -146,8 +145,8 @@ def get_grantmaking():
         "publicextract.charity_annual_return_parta.json",
     )
     df = datadate.df
-    grantmakers = df[df["grant_making_is_main_activity"] == True]
-    grantmakers = df[["organisation_number"]].drop_duplicates()
+    grantmakers = df[df["grant_making_is_main_activity"].fillna(False)]
+    grantmakers = grantmakers[["organisation_number"]].drop_duplicates()
     datadate.df = grantmakers
     return datadate
 
@@ -257,7 +256,16 @@ CC_GRANTMAKER = DataSource(
 def remove_grantmakers(df):
     print("removing grant makers")
     return df[
-        df["organisation_number"].isin(CC_GRANTMAKER.get_data()["organisation_number"])
+        ~df["organisation_number"].isin(CC_GRANTMAKER.get_data()["organisation_number"])
+    ]
+
+
+def remove_independent_schools(df):
+    print("removing independent schools")
+    return df[
+        ~df["registered_charity_number"].isin(
+            INDEPENDENT_SCHOOLS.get_data()["charity_number"]
+        )
     ]
 
 
@@ -289,11 +297,19 @@ def charities_by_la(data):
     lkp = data["ltla_utla"]
 
     # merge so that only active charities are kept
+    print("{} charities including subsidiaries".format(len(cc)))
+    cc = cc[cc["linked_charity_number"] == 0]
+    print("{} charities including grantmakers".format(len(cc)))
     cc = remove_grantmakers(cc)
+    print("{} charities excluding grantmakers".format(len(cc)))
+    cc = remove_independent_schools(cc)
+    print("{} charities excluding independent schools".format(len(cc)))
     drop_cols = ["linked_charity_number"]
     org_id_cols = ["organisation_number", "registered_charity_number"]
     split_cols = ["latest_expenditure", "latest_income"]
-    df = area.drop(columns=drop_cols,).merge(
+    df = area.drop(
+        columns=drop_cols,
+    ).merge(
         cc[org_id_cols + split_cols],
         on=["organisation_number", "registered_charity_number"],
         how="inner",
@@ -343,7 +359,12 @@ def charities_by_la(data):
 
 CC_BY_AREA = DataAsset(
     name="Charities by area",
-    inputs={"CC": CC_MAIN, "CC_Area": CC_AREA, "ltla_utla": LTLA_UTLA},
+    inputs={
+        "CC": CC_MAIN,
+        "CC_Area": CC_AREA,
+        "ltla_utla": LTLA_UTLA,
+        "independent_schools": INDEPENDENT_SCHOOLS,
+    },
     processer=charities_by_la,
     description=("Where charity has UTLA or region info."),
 )
@@ -605,26 +626,23 @@ LVL_UP_AREA_HISTORY = DataAsset(
 def level_up_spend_history_chart(data):
     import plotly.express as px
     import plotly.graph_objects as go
+
     pal = sns.color_palette("magma_r").as_hex()
     pal = [pal[5], pal[3], pal[1]]
 
-    df = data['df']
+    df = data["df"]
     cols = df.columns
     df = df.reset_index()
 
     df = df[df["year"] >= 2018]
     df = df[df["year"] <= 2021]
 
-    labels = [
-        '1 (places in most<br>need of investment)',
-        '2',
-        '3'
-    ]
+    labels = ["1 (places in most<br>need of investment)", "2", "3"]
     fig = go.Figure()
     for i, col in enumerate(cols):
         fig.add_trace(
             go.Line(
-                x=df['year'],
+                x=df["year"],
                 y=df[col],
                 marker=dict(
                     color=pal[i],
@@ -638,20 +656,13 @@ def level_up_spend_history_chart(data):
         yaxis=dict(
             title="Charity spend per head",
             range=[0, df[cols].max().max() * 1.05],
-            tickprefix='£'
+            tickprefix="£",
         ),
-        legend=dict(
-            traceorder='reversed',
-            title='Levelling up priority'
-        )
+        legend=dict(traceorder="reversed", title="Levelling up priority"),
     )
 
     ay = [20, -20, 20]
-    labels = [
-        'Priority area 1<br>highest need',
-        'Priority area 2',
-        'Priority area 3'
-    ]
+    labels = ["Priority area 1<br>highest need", "Priority area 2", "Priority area 3"]
     # for i, col in enumerate([1,2,3]):
     #     fig.add_annotation(
     #         x=2018,
@@ -661,17 +672,18 @@ def level_up_spend_history_chart(data):
     #         ay=ay[i],
     #         align='left'
     #     )
+    print(df.set_index("year").loc[2019, :])
     fig.add_annotation(
         x=2019,
-        y=df.set_index('year').loc[2019, 1],
-        text='Levelling up fund<br>announced in 2019',
-        showarrow=False,    #
+        y=df.set_index("year").loc[2019, 2],
+        text="Levelling up fund<br>announced in 2019",
+        showarrow=False,  #
         yshift=-30,
     )
     fig.add_annotation(
         x=2021,
-        y=df.set_index('year').loc[2021, 1],
-        text='Funding gap to priority<br>levelling up areas<br>has widened, not closed.',
+        y=df.set_index("year").loc[2021, 2],
+        text="Funding gap to priority<br>levelling up areas<br>has widened, not closed.",
         showarrow=False,
         yshift=-30,
         xshift=-30,
@@ -699,7 +711,7 @@ def focus_area_data(data):
         )
         .sum(numeric_only=True)
         .reset_index()
-        .set_index('utla_name')
+        .set_index("utla_name")
     )
     lvlup = data["lvlup_areas"]
     lvlup["Category"] = lvlup["Category"].round()
@@ -711,11 +723,11 @@ def focus_area_data(data):
         .reset_index()
     )
 
-    areas = ['Nottingham', 'Kent', 'Rochdale']
-    df = df[df['utla_name'].isin(areas)]
-    df = df.merge(utla_pop.reset_index(), how='left')
-    df['spend'] = df['total_gross_expenditure'] / df['population']
-    df = df.pivot(index='year', columns='utla_name', values='spend')
+    areas = ["Nottingham", "Kent", "Rochdale"]
+    df = df[df["utla_name"].isin(areas)]
+    df = df.merge(utla_pop.reset_index(), how="left")
+    df["spend"] = df["total_gross_expenditure"] / df["population"]
+    df = df.pivot(index="year", columns="utla_name", values="spend")
     return df
 
 
@@ -736,6 +748,7 @@ CC_3_AREAS_CHART = DataAsset(
     processer=level_up_spend_history_chart,
 )
 
+
 def area_spend_data(data):
     pop = data["ltla_pop"]
     lkp = data["ltla_utla"]
@@ -746,7 +759,7 @@ def area_spend_data(data):
         )
         .sum(numeric_only=True)
         .reset_index()
-        .set_index('utla_name')
+        .set_index("utla_name")
     )
     lvlup = data["lvlup_areas"]
     lvlup["Category"] = lvlup["Category"].round()
@@ -757,10 +770,10 @@ def area_spend_data(data):
         .sum()
         .reset_index()
     )
-    df = df.merge(utla_pop.reset_index(), how='left')
-    df['spend'] = df['total_gross_expenditure'] / df['population']
+    df = df.merge(utla_pop.reset_index(), how="left")
+    df["spend"] = df["total_gross_expenditure"] / df["population"]
 
-    df = df.pivot(index='year', columns='utla_name', values='spend')
+    df = df.pivot(index="year", columns="utla_name", values="spend")
     return df
 
 

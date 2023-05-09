@@ -1,6 +1,12 @@
 import models
 from sources.partner import trusselltrust, turn2us
-from sources.public import census, charity_comission, imd, levellingup
+from sources.public import (
+    census,
+    charity_comission,
+    imd,
+    independent_schools,
+    levellingup,
+)
 
 SummaryReport = models.Report(
     name="Report",
@@ -23,6 +29,7 @@ ASSETS = (
     census.AGE_SEX_LA,
     census.POP_LA,
     charity_comission.CC_MAIN,
+    independent_schools.INDEPENDENT_SCHOOLS,
     charity_comission.CC_AREA,
     charity_comission.CC_CATEGORY,
     charity_comission.CC_HISTORY,
