@@ -93,9 +93,9 @@ def plot_hexes(
                     y=0,
                     x=0,
                     bordercolor="#ff0000",
-                    nticks=5,
+                    # nticks=3,
                     tick0=0,
-                    tickformat=",.2r",
+                    tickformat=",.0r",
                 ),
             )
         else:

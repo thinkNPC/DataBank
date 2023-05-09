@@ -51,6 +51,7 @@ ASSETS = (
     levellingup.LEVELLING_UP,
     levellingup.LVL_BY_UTLA,
     levellingup.LEVELLING_UP_HEX,
+    levellingup.LEVELLING_UP_UTLA_HEX,
     trusselltrust.TrussellTrust,
     trusselltrust.TrussellTrustProportional,
     trusselltrust.TrussellTrustHex,
