@@ -304,8 +304,21 @@ def charities_by_la(data):
     print("{} charities excluding grantmakers".format(len(cc)))
     cc = remove_independent_schools(cc)
     print("{} charities excluding independent schools".format(len(cc)))
+    print(
+        "{} active charities with £{:,.1f}bn expenditure".format(
+            len(cc[cc["charity_registration_status"] == "Registered"]),
+            cc[cc["charity_registration_status"] == "Registered"][
+                "latest_expenditure"
+            ].sum()
+            / 1_000_000_000,
+        )
+    )
     drop_cols = ["linked_charity_number"]
-    org_id_cols = ["organisation_number", "registered_charity_number"]
+    org_id_cols = [
+        "organisation_number",
+        "registered_charity_number",
+        "charity_registration_status",
+    ]
     split_cols = ["latest_expenditure", "latest_income"]
     df = area.drop(
         columns=drop_cols,
@@ -352,6 +365,38 @@ def charities_by_la(data):
     no_match = df["utla_code"].isnull()
     logging.warning(
         f"No matches for {[name for name in df.loc[no_match, 'utla_name_cc'].unique()]}"
+    )
+    unique_chars = df.groupby("registered_charity_number").agg(
+        charity_registration_status=("charity_registration_status", "first"),
+        latest_expenditure=("latest_expenditure", "first"),
+    )
+    print(
+        "{} unique charities included with £{:,.1f}bn expenditure".format(
+            len(unique_chars),
+            unique_chars["latest_expenditure"].sum() / 1_000_000_000,
+        )
+    )
+    print(
+        "{} unique charities included (have expenditure) with £{:,.1f}bn expenditure".format(
+            len(unique_chars[unique_chars["latest_expenditure"].gt(0)]),
+            unique_chars[unique_chars["latest_expenditure"].gt(0)][
+                "latest_expenditure"
+            ].sum()
+            / 1_000_000_000,
+        )
+    )
+    print(
+        "{} unique charities included (currently registered) with £{:,.1f}bn expenditure".format(
+            len(
+                unique_chars[
+                    unique_chars["charity_registration_status"].eq("Registered")
+                ]
+            ),
+            unique_chars[unique_chars["charity_registration_status"].eq("Registered")][
+                "latest_expenditure"
+            ].sum()
+            / 1_000_000_000,
+        )
     )
 
     return df.drop(columns=["utla_clean", "utla_name_cc", "geographic_area_type"])
@@ -679,14 +724,14 @@ def level_up_spend_history_chart(data):
     print(df.set_index("year").loc[2019, :])
     fig.add_annotation(
         x=2019,
-        y=df.set_index("year").loc[2019, cols[0]],
+        y=df.set_index("year").loc[2019, cols[1]],
         text="Levelling up fund<br>announced in 2019",
         showarrow=False,  #
         yshift=-30,
     )
     fig.add_annotation(
         x=2021,
-        y=df.set_index("year").loc[2021, cols[0]],
+        y=df.set_index("year").loc[2021, cols[1]],
         text="Funding gap to priority<br>levelling up areas<br>has widened, not closed.",
         showarrow=False,
         yshift=-30,
